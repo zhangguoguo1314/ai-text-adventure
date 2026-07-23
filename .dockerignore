@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# 文档
+*.md
+LICENSE
+
+# 依赖
+node_modules
+
+# 构建产物
+dist
+.next
+build
+
+# 环境配置
+.env
+.env.local
+.env.*.local
+
+# Docker 文件（避免递归）
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# 数据库文件
+*.db
+*.db-journal
+
+# 杂项
+.DS_Store
+Thumbs.db
+*.log
+coverage
+tmp
+temp

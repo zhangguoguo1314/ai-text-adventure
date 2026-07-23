@@ -15,9 +15,9 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
+  // CORS - 允许所有来源（生产环境通过 Nginx 控制跨域）
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: true,
     credentials: true,
   });
 

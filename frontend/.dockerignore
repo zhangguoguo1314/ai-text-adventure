@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# 依赖
+node_modules
+
+# 构建产物
+.next
+out
+build
+
+# 文档
+*.md
+AGENTS.md
+CLAUDE.md
+
+# 环境配置
+.env
+.env.local
+.env.*.local
+
+# 杂项
+.DS_Store
+Thumbs.db
+*.log
+coverage
