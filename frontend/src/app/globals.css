@@ -1,33 +1,170 @@
 @import "tailwindcss";
 
+/* ========== CSS 变量系统 ========== */
+
 :root {
-  --bg: #f5f3ff;
+  --bg: #f8fafc;
   --bg2: #ffffff;
-  --ink: #1e1b4b;
-  --muted: #6b7280;
-  --rule: #e2e0f0;
+  --bg3: #f1f5f9;
+  --ink: #1e293b;
+  --muted: #64748b;
+  --rule: #e2e8f0;
   --accent: #7c3aed;
+  --accent-hover: #6d28d9;
   --accent2: #a78bfa;
-  --success: #059669;
-  --warning: #d97706;
-  --danger: #dc2626;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+
+.dark {
+  --bg: #0f172a;
+  --bg2: #1e293b;
+  --bg3: #334155;
+  --ink: #f1f5f9;
+  --muted: #94a3b8;
+  --rule: #334155;
+  --accent: #8b5cf6;
+  --accent-hover: #a78bfa;
+  --accent2: #c4b5fd;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== Tailwind v4 主题映射 ========== */
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--ink);
   --color-bg2: var(--bg2);
+  --color-bg3: var(--bg3);
   --color-muted: var(--muted);
   --color-rule: var(--rule);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent2: var(--accent2);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+
+  /* 自定义动画 */
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-in-right: slide-in-right 0.3s ease-out;
+  --animate-theme-icon-in: theme-icon-in 0.25s ease-out;
 }
+
+/* ========== 关键帧动画 ========== */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes theme-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* ========== prefers-reduced-motion ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========== 基础样式 ========== */
 
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ========== 自定义滚动条 ========== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+/* ========== 玻璃态效果类 ========== */
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+/* ========== 卡片阴影工具类 ========== */
+
+.card-shadow {
+  box-shadow: var(--card-shadow);
+}
+
+/* ========== 主题切换过渡 ========== */
+
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.3s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease !important;
 }

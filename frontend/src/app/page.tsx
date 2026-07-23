@@ -5,6 +5,7 @@ import Banner from '@/components/home/Banner';
 import SearchBar from '@/components/home/SearchBar';
 import RankTabs from '@/components/home/RankTabs';
 import ScriptCard from '@/components/home/ScriptCard';
+import PageTransition from '@/components/common/PageTransition';
 import { Script } from '@/types';
 
 const mockScripts: Script[] = [
@@ -82,27 +83,29 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState('category');
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Banner 轮播 */}
-      <Banner />
+    <PageTransition>
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Banner 轮播 */}
+        <Banner />
 
-      {/* 搜索框 */}
-      <div className="mt-6">
-        <SearchBar />
-      </div>
+        {/* 搜索框 */}
+        <div className="mt-6">
+          <SearchBar />
+        </div>
 
-      {/* 排行榜区域 */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold text-[var(--ink)] mb-4">排行榜</h2>
-        <RankTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* 排行榜区域 */}
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-[var(--ink)] mb-4">排行榜</h2>
+          <RankTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* 作品列表 */}
-        <div className="mt-4 space-y-3">
-          {mockScripts.map((script, idx) => (
-            <ScriptCard key={script.id} script={script} rank={idx + 1} />
-          ))}
+          {/* 作品列表 */}
+          <div className="mt-4 space-y-3">
+            {mockScripts.map((script, idx) => (
+              <ScriptCard key={script.id} script={script} rank={idx + 1} />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

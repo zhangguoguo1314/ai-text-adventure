@@ -45,7 +45,7 @@ export default function Banner() {
   const banner = mockBanners[current];
 
   return (
-    <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden">
+    <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden card-shadow">
       <div
         className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor} transition-all duration-500`}
       />

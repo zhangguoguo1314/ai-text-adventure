@@ -23,8 +23,8 @@ export default function RankTabs({ activeTab, onTabChange }: RankTabsProps) {
           onClick={() => onTabChange(tab.key)}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
             activeTab === tab.key
-              ? 'bg-violet-600 text-white'
-              : 'bg-white text-[var(--ink)] hover:bg-violet-100'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-[var(--bg2)] text-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]'
           }`}
         >
           {tab.label}

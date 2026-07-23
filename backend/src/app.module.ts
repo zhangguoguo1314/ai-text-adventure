@@ -11,6 +11,7 @@ import { GameModule } from './game/game.module';
 import { CommunityModule } from './community/community.module';
 import { CoinModule } from './coin/coin.module';
 import { AdminModule } from './admin/admin.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AdminModule } from './admin/admin.module';
     CommunityModule,
     CoinModule,
     AdminModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
