@@ -1,0 +1,240 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
+import { useState } from 'react';
+
+const navLinks = [
+  { label: '发现', href: '/' },
+  { label: '我的', href: '/my-works' },
+  { label: '社区广场', href: '/plaza' },
+];
+
+const createLinks = [
+  { label: '开始创作', href: '/create' },
+  { label: '模板库', href: '/plaza?type=template' },
+  { label: '我的创作', href: '/my-works' },
+];
+
+const accountLinks = [
+  { label: '设置', href: '/profile' },
+  { label: '关注动态', href: '/plaza?type=following' },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const { balance, sidebarCollapsed, toggleSidebar } = useAppStore();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleCreateClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      setShowAuthModal(true);
+    }
+  };
+
+  return (
+    <>
+      {/* 移动端遮罩 */}
+      {!sidebarCollapsed && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
+      <aside
+        className={`fixed top-0 left-0 z-50 h-screen bg-violet-900 text-white flex flex-col transition-all duration-300 ${
+          sidebarCollapsed ? '-translate-x-full lg:w-16 lg:translate-x-0' : 'w-60'
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-5 h-16 border-b border-violet-800">
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-violet-800 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          {!sidebarCollapsed && (
+            <Link href="/" className="text-lg font-bold text-violet-200 hover:text-white">
+              AI Text Adventure
+            </Link>
+          )}
+        </div>
+
+        {/* 主导航 */}
+        {!sidebarCollapsed && (
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+            {/* 发现 / 我的 / 社区广场 */}
+            <div>
+              <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
+                导航
+              </p>
+              {navLinks.map((link) => {
+                const isActive =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : pathname.startsWith(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? 'bg-violet-800 text-violet-200 font-medium'
+                        : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* 创作组 */}
+            <div>
+              <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
+                创作
+              </p>
+              {createLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={handleCreateClick}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    pathname === link.href
+                      ? 'bg-violet-800 text-violet-200 font-medium'
+                      : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* 账户组 */}
+            <div>
+              <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
+                账户
+              </p>
+              {accountLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    pathname === link.href
+                      ? 'bg-violet-800 text-violet-200 font-medium'
+                      : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* 公告按钮 */}
+            <div className="relative px-3">
+              <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-violet-300 hover:bg-violet-800/50 hover:text-white transition-colors w-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                公告
+                <span className="absolute top-0 right-4 w-2 h-2 bg-red-500 rounded-full" />
+              </button>
+            </div>
+          </nav>
+        )}
+
+        {/* 底部区域 - 余额 + 用户信息 */}
+        <div className="border-t border-violet-800 p-4">
+          {/* UU币余额 */}
+          {!sidebarCollapsed && (
+            <div className="flex items-center justify-between mb-3 px-2">
+              <div className="text-sm text-violet-300">
+                UU币：<span className="text-yellow-400 font-bold">{balance.permanent + balance.temp}</span>
+              </div>
+              <button className="p-1 rounded hover:bg-violet-800 text-violet-400 hover:text-white">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* 模型/兑换按钮 */}
+          {!sidebarCollapsed && (
+            <button className="w-full py-2 mb-3 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium transition-colors">
+              模型 / 兑换
+            </button>
+          )}
+
+          {/* 用户信息 */}
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-sm font-bold">
+                {user.nickname?.[0] || 'U'}
+              </div>
+              {!sidebarCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{user.nickname}</p>
+                  <p className="text-xs text-violet-400">Lv.{user.level}</p>
+                </div>
+              )}
+              {!sidebarCollapsed && (
+                <button
+                  onClick={logout}
+                  className="p-1 rounded hover:bg-violet-800 text-violet-400 hover:text-white"
+                  title="退出登录"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ) : (
+            !sidebarCollapsed && (
+              <Link
+                href="/login"
+                className="block w-full py-2 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium text-center transition-colors"
+              >
+                登录 / 注册
+              </Link>
+            )
+          )}
+        </div>
+      </aside>
+
+      {/* 登录提示弹窗 */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">请先登录</h3>
+            <p className="text-gray-600 mb-4">创作功能需要登录后才能使用。</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <Link
+                href="/login"
+                onClick={() => setShowAuthModal(false)}
+                className="flex-1 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 text-center"
+              >
+                去登录
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

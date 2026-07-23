@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String    @map("password_hash")
+  nickname     String    @default("")
+  avatar       String?   @default("/default-avatar.png")
+  bio          String?   @default("")
+  level        Int       @default(1)
+  role         String    @default("user") // user, creator, admin
+  status       String    @default("active") // active, banned, deactivated
+  inviteCode   String    @unique @map("invite_code")
+  invitedBy    Int?      @map("invited_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  balance     UserBalance?
+  preferences UserPreference?
+  apiConfigs  UserApiConfig[]
+  scripts     Script[]
+  sessions    GameSession[]
+  saves       Save[]
+  transactions TransactionLog[]
+  payments    PaymentOrder[]
+  posts       Post[]
+  comments    Comment[]
+  sentFollows Follow[]      @relation("FollowerFollows")
+  recvFollows Follow[]      @relation("FollowingFollows")
+  favorites   Favorite[]
+  notifications Notification[]
+  invitations Invitation[] @relation("InviterInvitations")
+  invitation  Invitation?  @relation("InviteeInvitation")
+
+  @@map("users")
+}
+
+model UserBalance {
+  userId           Int  @id @map("user_id")
+  permanentBalance Int  @default(0) @map("permanent_balance")
+  tempBalance      Int  @default(0) @map("temp_balance")
+  tempExpireAt     DateTime? @map("temp_expire_at")
+  totalIncome      Int  @default(0) @map("total_income")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_balances")
+}
+
+model UserPreference {
+  userId         Int    @id @map("user_id")
+  theme          String @default("light")
+  modelPreference String? @map("model_preference")
+  useCustomApi   Boolean @default(true) @map("use_custom_api")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Script {
+  id             Int      @id @default(autoincrement())
+  authorId       Int      @map("author_id")
+  title          String
+  cover          String?
+  desc           String?  @default("")
+  category       String   @default("adventure")
+  worldSetting   String?  @default("") @map("world_setting")
+  styleId        Int?     @map("style_id")
+  playCount      Int      @default(0) @map("play_count")
+  favCount       Int      @default(0) @map("fav_count")
+  status         String   @default("draft") // draft,reviewing,published,rejected,archived
+  rejectionReason String? @map("rejection_reason")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  author      User          @relation(fields: [authorId], references: [id])
+  npcs        ScriptNpc[]
+  attributes  ScriptAttribute[]
+  nodes       ScriptNode[]
+  sessions    GameSession[]
+  comments    Comment[]
+  favorites   Favorite[]
+
+  @@map("scripts")
+}
+
+model StyleTemplate {
+  id       Int    @id @default(autoincrement())
+  name     String
+  icon     String @default("✨")
+  preview  String @default("")
+  prompt   String @default("")
+  useCount Int    @default(0) @map("use_count")
+
+  @@map("style_templates")
+}
+
+model ScriptNpc {
+  id       Int    @id @default(autoincrement())
+  scriptId Int    @map("script_id")
+  name     String
+  personality String @default("")
+  avatar   String?
+  sortOrder Int   @default(0) @map("sort_order")
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@map("script_npcs")
+}
+
+model ScriptAttribute {
+  id       Int    @id @default(autoincrement())
+  scriptId Int    @map("script_id")
+  name     String
+  type     String @default("number") // number, enum, boolean
+  minVal   Float? @map("min_val")
+  maxVal   Float? @map("max_val")
+  defaultVal String? @map("default_val")
+  thresholdRules String? @map("threshold_rules") // JSON string stored as Text for SQLite
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@map("script_attributes")
+}
+
+model ScriptNode {
+  id        Int    @id @default(autoincrement())
+  scriptId  Int    @map("script_id")
+  type      String @default("scene") // scene, choice, condition, preset
+  content   String @default("")
+  choices   String? // JSON string stored as Text for SQLite
+  condition String? // JSON string stored as Text for SQLite
+  posX      Float? @map("pos_x")
+  posY      Float? @map("pos_y")
+  parentId  Int?   @map("parent_id")
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@map("script_nodes")
+}
+
+model GameSession {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  scriptId    Int      @map("script_id")
+  gameState   String   @default("{}") @map("game_state") // JSON string stored as Text for SQLite
+  totalTokens Int      @default(0) @map("total_tokens")
+  totalCost   Int      @default(0) @map("total_cost")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  script  Script   @relation(fields: [scriptId], references: [id])
+  saves   Save[]
+
+  @@map("game_sessions")
+}
+
+model Save {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  sessionId   Int      @map("session_id")
+  gameState   String   @default("{}") @map("game_state") // JSON string stored as Text for SQLite
+  description String   @default("")
+  isAuto      Boolean  @default(false) @map("is_auto")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user    User         @relation(fields: [userId], references: [id])
+  session GameSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("saves")
+}
+
+model TransactionLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  type        String   // spend, income, recharge, withdraw, redeem
+  amount      Int
+  currency    String   @default("uu") // uu, rmb
+  description String   @default("")
+  relatedType String?  @map("related_type") // ai_call, payment, creator_income
+  relatedId   Int?     @map("related_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("transaction_logs")
+}
+
+model PaymentOrder {
+  id            Int      @id @default(autoincrement())
+  orderNo       String   @unique @map("order_no")
+  userId        Int      @map("user_id")
+  amount        Float    @map("amount")
+  uuAmount      Int      @map("uu_amount")
+  paymentMethod String   @map("payment_method") // alipay, wechat
+  tradeNo       String?  @map("trade_no")
+  status        String   @default("pending") // pending, success, failed, expired
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("payment_orders")
+}
+
+model UserApiConfig {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  provider     String
+  baseUrl      String   @map("base_url")
+  encryptedKey String   @map("encrypted_key")
+  iv           String?
+  model        String   @default("")
+  status       String   @default("unverified") // unverified, verified
+  priority     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_api_configs")
+}
+
+model RedemptionCode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  uuAmount    Int       @map("uu_amount")
+  maxUses     Int       @default(1) @map("max_uses")
+  currentUses Int       @default(0) @map("current_uses")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("redemption_codes")
+}
+
+model AiModel {
+  id           Int    @id @default(autoincrement())
+  name         String @unique
+  displayName  String @map("display_name")
+  rate         Float  @default(1.0)
+  backendModel String @map("backend_model")
+  multimodal   Boolean @default(false)
+  maxTokens    Int    @default(4096) @map("max_tokens")
+  isActive     Boolean @default(true) @map("is_active")
+
+  @@map("ai_models")
+}
+
+model Post {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  content      String   @default("")
+  images       String   @default("[]") // JSON string stored as Text for SQLite
+  likeCount    Int      @default(0) @map("like_count")
+  commentCount Int      @default(0) @map("comment_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  comments Comment[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  targetType String   @map("target_type") // script, post, app
+  targetId   Int      @map("target_id")
+  content    String   @default("")
+  rating     Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id])
+  script Script? @relation(fields: [targetId], references: [id])
+  post   Post?   @relation(fields: [targetId], references: [id])
+
+  @@map("comments")
+}
+
+model Follow {
+  id         Int      @id @default(autoincrement())
+  followerId Int      @map("follower_id")
+  followingId Int      @map("following_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  follower User @relation("FollowerFollows", fields: [followerId], references: [id])
+  following User @relation("FollowingFollows", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Favorite {
+  userId     Int      @map("user_id")
+  targetType String   @map("target_type") // script, post, app, character
+  targetId   Int      @map("target_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id])
+  script Script? @relation(fields: [targetId], references: [id])
+
+  @@id([userId, targetType, targetId])
+  @@map("favorites")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String   @default("")
+  title     String   @default("")
+  content   String   @default("")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   @default("")
+  type      String   @default("normal") // normal, urgent
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("announcements")
+}
+
+model Invitation {
+  id                    Int      @id @default(autoincrement())
+  inviterId             Int      @map("inviter_id")
+  inviteeId             Int      @unique @map("invitee_id")
+  code                  String
+  inviterRewardGranted  Boolean  @default(false) @map("inviter_reward_granted")
+  inviteeRewardGranted  Boolean  @default(false) @map("invitee_reward_granted")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  inviter User @relation("InviterInvitations", fields: [inviterId], references: [id])
+  invitee User @relation("InviteeInvitation", fields: [inviteeId], references: [id])
+
+  @@map("invitations")
+}
