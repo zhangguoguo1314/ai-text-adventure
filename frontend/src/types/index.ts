@@ -34,6 +34,57 @@ export interface Script {
   updatedAt: string;
 }
 
+/* ===== NPC ===== */
+export interface ScriptNpc {
+  id: number;
+  scriptId: number;
+  name: string;
+  personality: string;
+  avatar: string | null;
+  sortOrder: number;
+}
+
+/* ===== 属性 ===== */
+export interface ScriptAttribute {
+  id: number;
+  scriptId: number;
+  name: string;
+  type: 'number' | 'enum' | 'boolean';
+  minVal: number | null;
+  maxVal: number | null;
+  defaultVal: string | null;
+  thresholdRules: string | null;
+}
+
+/* ===== 剧情节点 ===== */
+export interface ScriptNode {
+  id: number;
+  scriptId: number;
+  type: 'scene' | 'choice' | 'condition' | 'preset';
+  content: string;
+  choices: string | null; // JSON
+  condition: string | null; // JSON
+  posX: number | null;
+  posY: number | null;
+  parentId: number | null;
+}
+
+export interface NodeChoice {
+  text: string;
+  nextNodeId: number | null;
+}
+
+/* ===== AI 生成结果 ===== */
+export interface GeneratedContent {
+  worldSetting: string;
+  npcs: Array<{ id?: number; name: string; personality: string; avatar: string | null; sortOrder?: number }>;
+  attributes: Array<{ id?: number; name: string; type: string; minVal: number | null; maxVal: number | null; defaultVal: string | null }>;
+  openingScene: {
+    content: string;
+    choices: NodeChoice[];
+  };
+}
+
 /* ===== 游戏会话 ===== */
 export interface GameSession {
   id: number;
@@ -61,10 +112,10 @@ export interface AiModel {
 export interface StyleTemplate {
   id: number;
   name: string;
-  description: string;
+  icon: string;
+  preview: string;
   prompt: string;
-  coverImage: string | null;
-  category: string;
+  useCount: number;
 }
 
 /* ===== 自定义 API 配置 ===== */
