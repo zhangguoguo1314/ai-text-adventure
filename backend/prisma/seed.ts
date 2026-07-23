@@ -124,6 +124,63 @@ async function main() {
   }
   console.log(`Seeded ${aiModels.length} AI models`);
 
+  // Seed Redemption Codes
+  const redemptionCodes = [
+    {
+      code: 'WELCOME100',
+      uuAmount: 100,
+      maxUses: 1000,
+      currentUses: 0,
+      expiresAt: new Date('2027-12-31'),
+    },
+    {
+      code: 'VIP500',
+      uuAmount: 500,
+      maxUses: 100,
+      currentUses: 0,
+      expiresAt: new Date('2027-06-30'),
+    },
+    {
+      code: 'TEST999',
+      uuAmount: 999,
+      maxUses: 10,
+      currentUses: 0,
+      expiresAt: new Date('2027-12-31'),
+    },
+  ];
+
+  for (const rc of redemptionCodes) {
+    await prisma.redemptionCode.upsert({
+      where: { code: rc.code },
+      update: rc,
+      create: rc,
+    });
+  }
+  console.log(`Seeded ${redemptionCodes.length} redemption codes`);
+
+  // Seed Announcements
+  const announcements = [
+    {
+      title: '欢迎使用 AI Text Adventure',
+      content: '欢迎来到 AI Text Adventure 平台！注册即送 100 UU币，快来创建你的第一个剧本吧。',
+      type: 'normal',
+    },
+    {
+      title: '平台更新通知',
+      content: '新增社区广场功能，支持发布动态、点赞评论、关注创作者。快来体验吧！',
+      type: 'normal',
+    },
+  ];
+
+  for (const ann of announcements) {
+    await prisma.announcement.upsert({
+      where: { id: announcements.indexOf(ann) + 1 },
+      update: ann,
+      create: ann,
+    });
+  }
+  console.log(`Seeded ${announcements.length} announcements`);
+
   console.log('Seeding completed!');
 }
 

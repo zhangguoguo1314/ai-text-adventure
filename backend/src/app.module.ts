@@ -8,6 +8,8 @@ import { UserModule } from './user/user.module';
 import { ScriptsModule } from './scripts/scripts.module';
 import { StyleTemplatesModule } from './style-templates/style-templates.module';
 import { GameModule } from './game/game.module';
+import { CommunityModule } from './community/community.module';
+import { CoinModule } from './coin/coin.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { GameModule } from './game/game.module';
     ScriptsModule,
     StyleTemplatesModule,
     GameModule,
+    CommunityModule,
+    CoinModule,
   ],
   controllers: [AppController],
   providers: [AppService],

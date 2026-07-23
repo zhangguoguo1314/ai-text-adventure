@@ -5,10 +5,12 @@ interface User {
   id: number;
   nickname: string;
   avatar: string | null;
+  bio?: string | null;
   level: number;
   role: string;
   phone?: string;
   email?: string;
+  inviteCode?: string;
 }
 
 interface AuthState {

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { useState } from 'react';
+import ModelExchangeModal from '@/components/settings/ModelExchangeModal';
 
 const navLinks = [
   { label: '发现', href: '/' },
@@ -28,6 +29,7 @@ export default function Sidebar() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { balance, sidebarCollapsed, toggleSidebar } = useAppStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showModelModal, setShowModelModal] = useState(false);
 
   const handleCreateClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) {
@@ -38,7 +40,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 移动端遮罩 */}
+      {/* Mobile overlay */}
       {!sidebarCollapsed && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -68,10 +70,10 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* 主导航 */}
+        {/* Main Nav */}
         {!sidebarCollapsed && (
           <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-            {/* 发现 / 我的 / 社区广场 */}
+            {/* Navigation */}
             <div>
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
                 导航
@@ -97,7 +99,7 @@ export default function Sidebar() {
               })}
             </div>
 
-            {/* 创作组 */}
+            {/* Creation */}
             <div>
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
                 创作
@@ -118,7 +120,7 @@ export default function Sidebar() {
               ))}
             </div>
 
-            {/* 账户组 */}
+            {/* Account */}
             <div>
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
                 账户
@@ -136,9 +138,19 @@ export default function Sidebar() {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href="/settings/api"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  pathname.startsWith('/settings/api')
+                    ? 'bg-violet-800 text-violet-200 font-medium'
+                    : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
+                }`}
+              >
+                自定义 API
+              </Link>
             </div>
 
-            {/* 公告按钮 */}
+            {/* Notification button */}
             <div className="relative px-3">
               <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-violet-300 hover:bg-violet-800/50 hover:text-white transition-colors w-full">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,9 +163,9 @@ export default function Sidebar() {
           </nav>
         )}
 
-        {/* 底部区域 - 余额 + 用户信息 */}
+        {/* Bottom - Balance + User */}
         <div className="border-t border-violet-800 p-4">
-          {/* UU币余额 */}
+          {/* UU Balance */}
           {!sidebarCollapsed && (
             <div className="flex items-center justify-between mb-3 px-2">
               <div className="text-sm text-violet-300">
@@ -167,14 +179,17 @@ export default function Sidebar() {
             </div>
           )}
 
-          {/* 模型/兑换按钮 */}
+          {/* Model / Exchange button */}
           {!sidebarCollapsed && (
-            <button className="w-full py-2 mb-3 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium transition-colors">
+            <button
+              onClick={() => setShowModelModal(true)}
+              className="w-full py-2 mb-3 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium transition-colors"
+            >
               模型 / 兑换
             </button>
           )}
 
-          {/* 用户信息 */}
+          {/* User info */}
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3 px-2">
               <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-sm font-bold">
@@ -211,7 +226,7 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* 登录提示弹窗 */}
+      {/* Auth Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center">
           <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
@@ -235,6 +250,12 @@ export default function Sidebar() {
           </div>
         </div>
       )}
+
+      {/* Model Exchange Modal */}
+      <ModelExchangeModal
+        open={showModelModal}
+        onClose={() => setShowModelModal(false)}
+      />
     </>
   );
 }

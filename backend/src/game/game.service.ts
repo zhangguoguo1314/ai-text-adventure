@@ -289,7 +289,7 @@ export class GameService {
   }
 
   /**
-   * 扣费并记录交易
+   * 扣费并记录交易 + 创作者分成（10%）
    */
   async deductTokens(
     userId: number,
@@ -340,6 +340,55 @@ export class GameService {
         relatedId: sessionId,
       },
     });
+
+    // 创作者分成：10%给剧本作者
+    const creatorShare = Math.ceil(cost * 0.1);
+    if (creatorShare > 0) {
+      const session = await this.prisma.gameSession.findUnique({
+        where: { id: sessionId },
+        include: { script: { select: { authorId: true } } },
+      });
+
+      if (session && session.script.authorId !== userId) {
+        const authorId = session.script.authorId;
+
+        // 确保作者余额记录存在
+        const authorBalance = await this.prisma.userBalance.findUnique({
+          where: { userId: authorId },
+        });
+
+        if (!authorBalance) {
+          await this.prisma.userBalance.create({
+            data: {
+              userId: authorId,
+              permanentBalance: creatorShare,
+              totalIncome: creatorShare,
+            },
+          });
+        } else {
+          await this.prisma.userBalance.update({
+            where: { userId: authorId },
+            data: {
+              permanentBalance: { increment: creatorShare },
+              totalIncome: { increment: creatorShare },
+            },
+          });
+        }
+
+        // 记录创作者收入
+        await this.prisma.transactionLog.create({
+          data: {
+            userId: authorId,
+            type: 'income',
+            amount: creatorShare,
+            currency: 'uu',
+            description: `剧本被游玩，创作者分成（10%）`,
+            relatedType: 'creator_income',
+            relatedId: sessionId,
+          },
+        });
+      }
+    }
 
     // 更新会话统计
     await this.prisma.gameSession.update({
