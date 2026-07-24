@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { RealtimeService } from '../realtime/realtime.service';
+import { ScriptLogicService } from '../script-logic/script-logic.service';
 import {
   GameState,
   InventoryItem,
@@ -26,6 +27,7 @@ export class GameService {
     private prisma: PrismaService,
     private aiService: AiService,
     private realtimeService: RealtimeService,
+    private scriptLogicService: ScriptLogicService,
   ) {}
 
   // ========================
@@ -92,6 +94,27 @@ export class GameService {
   // ========================
   // 游戏核心操作
   // ========================
+
+  /**
+   * 获取剧本逻辑配置
+   */
+  async getScriptLogicConfig(scriptId: number) {
+    return this.scriptLogicService.getLogicConfig(scriptId);
+  }
+
+  /**
+   * 评估游戏逻辑 - 检查事件触发和结局达成
+   */
+  evaluateGameLogic(gameState: GameState, logicConfig: any) {
+    return this.scriptLogicService.evaluateLogic(gameState, logicConfig);
+  }
+
+  /**
+   * 应用事件效果到游戏状态
+   */
+  applyLogicEffects(gameState: GameState, effects: any[]) {
+    return this.scriptLogicService.applyEventEffects(gameState, effects);
+  }
 
   /**
    * 开始新游戏
@@ -363,7 +386,7 @@ export class GameService {
 
   /**
    * 构建增强版系统 Prompt
-   * 支持叙事规则、文风贯穿、开场白注入
+   * 支持叙事规则、文风贯穿、开场白注入、剧本逻辑配置
    */
   buildPrompt(
     worldSetting: string,
@@ -373,6 +396,7 @@ export class GameService {
       narrativeRules?: string;
       openingText?: string;
       styleId?: number | null;
+      logicConfig?: any; // ScriptLogicConfig
     },
   ): string {
     let systemPrompt = '你是一个文字冒险游戏的叙述者。请根据玩家的行动，描述接下来发生的事情。\n\n';
@@ -385,6 +409,14 @@ export class GameService {
     // 叙事规则（AI生成时产出的文风约束、特殊机制等，贯穿游玩全程）
     if (options?.narrativeRules) {
       systemPrompt += `【叙事规则】\n${options.narrativeRules}\n\n`;
+    }
+
+    // 剧本逻辑配置注入（事件链/结局/章节/NPC触发等）
+    if (options?.logicConfig) {
+      const logicPrompt = this.scriptLogicService.buildLogicPrompt(gameState, options.logicConfig);
+      if (logicPrompt) {
+        systemPrompt += logicPrompt;
+      }
     }
 
     // 角色创建配置（对标UU的家世/性格/特质等开局选择）

@@ -231,4 +231,35 @@ export class ScriptsController {
   ) {
     return this.scriptsService.updateStoryStructure(Number(id), req.user.id, body.storyArcs, body.endings);
   }
+
+  /* ===== 增量AI生成 - 剧本自产系统核心能力 ===== */
+
+  @Post(':id/generate-incremental')
+  @UseGuards(CombinedAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '增量AI生成 - 只重新生成指定项，保留其他内容' })
+  async generateIncremental(
+    @Param('id') id: string,
+    @Body() body: { items: string[]; extraInstruction?: string; mergeMode?: boolean },
+  ) {
+    return this.scriptsService.generateIncremental(Number(id), {
+      items: body.items,
+      extraInstruction: body.extraInstruction,
+      mergeMode: body.mergeMode,
+    });
+  }
+
+  @Post(':id/generate-logic')
+  @UseGuards(CombinedAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'AI生成剧本逻辑配置（事件链/结局/章节/NPC触发）' })
+  async generateLogicConfig(
+    @Param('id') id: string,
+    @Body() body: { type: 'event_chains' | 'endings' | 'story_arcs' | 'npc_triggers' | 'full_logic'; instruction?: string },
+  ) {
+    return this.scriptsService.generateLogicConfig(Number(id), {
+      type: body.type,
+      instruction: body.instruction,
+    });
+  }
 }

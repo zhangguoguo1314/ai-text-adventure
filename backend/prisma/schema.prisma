@@ -93,6 +93,7 @@ model Script {
   engineType     String?  @default("standard") @map("engine_type") // 生成引擎类型
   openingText    String?  @default("") @map("opening_text") // 开场白文本（独立于节点）
   isAiGenerated  Boolean  @default(false) @map("is_ai_generated") // 是否AI生成
+  logicConfig    String?  @default("{}") @map("logic_config") // 剧本逻辑配置JSON（事件链/结局触发器/故事章节等）
 
   author      User          @relation(fields: [authorId], references: [id])
   npcs        ScriptNpc[]

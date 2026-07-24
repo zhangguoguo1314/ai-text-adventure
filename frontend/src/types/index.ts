@@ -202,3 +202,190 @@ export interface PaginatedResponse<T> {
   pageSize: number;
   totalPages: number;
 }
+
+/* ===========================================================================
+ * 剧本逻辑引擎类型（对标"剧本自产系统"）
+ * 对应后端 script-logic.types.ts
+ * ========================================================================= */
+
+/** 事件触发器类型 */
+export type EventTriggerType =
+  | 'location'
+  | 'time'
+  | 'chapter'
+  | 'attribute'
+  | 'flag'
+  | 'npc_relation'
+  | 'choice'
+  | 'turn_count'
+  | 'custom';
+
+/** 条件类型 */
+export type ConditionType =
+  | 'attribute'
+  | 'flag'
+  | 'npc_relation'
+  | 'karma'
+  | 'chapter'
+  | 'day'
+  | 'inventory'
+  | 'skill'
+  | 'ending'
+  | 'custom';
+
+/** 条件运算符 */
+export type ConditionOperator =
+  | 'eq'
+  | 'ne'
+  | 'gt'
+  | 'lt'
+  | 'gte'
+  | 'lte'
+  | 'contains'
+  | 'not_contains'
+  | 'between'
+  | 'exists';
+
+/** 事件效果类型 */
+export type EffectType =
+  | 'attribute_change'
+  | 'flag_set'
+  | 'npc_relation_change'
+  | 'karma_change'
+  | 'item_give'
+  | 'item_remove'
+  | 'skill_learn'
+  | 'location_change'
+  | 'time_change'
+  | 'chapter_change'
+  | 'narrative'
+  | 'combat_start'
+  | 'ending_trigger'
+  | 'unlock_choice'
+  | 'lock_choice'
+  | 'custom';
+
+/** 结局类型 */
+export type EndingType =
+  | 'good'
+  | 'bad'
+  | 'neutral'
+  | 'hidden'
+  | 'true_ending'
+  | 'death';
+
+/** AI 增量生成项类型 */
+export type GenerateItemType =
+  | 'worldSetting'
+  | 'narrativeRules'
+  | 'description'
+  | 'tags'
+  | 'themeColor'
+  | 'npcs'
+  | 'attributes'
+  | 'charConfig'
+  | 'openingText'
+  | 'storyArcs'
+  | 'endings'
+  | 'eventChains'
+  | 'logicConfig';
+
+/** 事件触发器 */
+export interface EventTrigger {
+  type: EventTriggerType;
+  target: string;
+  operator: ConditionOperator;
+  value: any;
+}
+
+/** 事件条件 */
+export interface EventCondition {
+  type: ConditionType;
+  target: string;
+  operator: ConditionOperator;
+  value: any;
+  description?: string;
+}
+
+/** 事件效果 */
+export interface EventEffect {
+  type: EffectType;
+  target: string;
+  value: any;
+  description?: string;
+}
+
+/** 事件链 */
+export interface EventChain {
+  id: string;
+  name: string;
+  description: string;
+  trigger: EventTrigger;
+  conditions: EventCondition[];
+  effects: EventEffect[];
+  onceOnly: boolean;
+  priority: number;
+  enabled: boolean;
+}
+
+/** 结局触发器 */
+export interface EndingTrigger {
+  id: string;
+  title: string;
+  description: string;
+  type: EndingType;
+  conditions: EventCondition[];
+  priority: number;
+  narrative: string;
+  isHidden: boolean;
+}
+
+/** 故事章节 */
+export interface StoryArc {
+  chapter: number;
+  title: string;
+  summary: string;
+  keyEvents: string[];
+  triggerConditions?: EventCondition[];
+  keyNpcs?: string[];
+  locations?: string[];
+}
+
+/** 角色创建字段 */
+export interface CharCreationField {
+  key: string;
+  label: string;
+  icon: string;
+  options: string[];
+  required: boolean;
+  allowRandom: boolean;
+  description?: string;
+}
+
+/** 自定义文本字段 */
+export interface CustomTextField {
+  key: string;
+  label: string;
+  icon: string;
+  maxLength: number;
+  required: boolean;
+  placeholder: string;
+}
+
+/** 角色创建配置 */
+export interface CharacterCreationConfig {
+  fields: CharCreationField[];
+  allowCustomText: boolean;
+  customTextFields?: CustomTextField[];
+}
+
+/** 剧本完整逻辑配置 */
+export interface ScriptLogicConfig {
+  eventChains: EventChain[];
+  endingTriggers: EndingTrigger[];
+  storyArcs: StoryArc[];
+  npcTriggerConfig: any[];
+  customRules: string;
+  characterCreation: CharacterCreationConfig;
+  attributeThresholds: any[];
+}

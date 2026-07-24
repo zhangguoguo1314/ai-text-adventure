@@ -81,7 +81,15 @@ export class GameController {
       // 添加玩家最新行动
       history.push({ role: 'player', content: dto.action, type: 'narrative' });
 
-      // 构建系统 prompt（使用增强版）
+      // 加载剧本逻辑配置
+      let logicConfig: any = null;
+      try {
+        logicConfig = await this.gameService.getScriptLogicConfig(session.script.id);
+      } catch {
+        // 逻辑配置加载失败不影响游戏
+      }
+
+      // 构建系统 prompt（使用增强版，包含逻辑配置）
       const systemPrompt = this.gameService.buildPrompt(
         script.worldSetting || '',
         gameState,
@@ -89,11 +97,12 @@ export class GameController {
           name: npc.name,
           personality: npc.personality,
         })),
-        // 传入叙事规则和文风提示（贯穿游玩全程）
+        // 传入叙事规则、文风提示和逻辑配置（贯穿游玩全程）
         {
           narrativeRules: script.narrativeRules || '',
           openingText: script.openingText || '',
           styleId: script.styleId,
+          logicConfig,
         },
       );
 

@@ -8,10 +8,11 @@ import NpcPanel from '@/components/editor/NpcPanel';
 import AttributePanel from '@/components/editor/AttributePanel';
 import NodeEditor from '@/components/editor/NodeEditor';
 import AiImageGenerator from '@/components/editor/AiImageGenerator';
+import LogicConfigPanel from '@/components/editor/LogicConfigPanel';
 import api from '@/lib/api';
 import { ScriptNpc, ScriptAttribute, ScriptNode } from '@/types';
 
-type TabKey = 'world' | 'npcs' | 'attributes' | 'nodes';
+type TabKey = 'world' | 'npcs' | 'attributes' | 'nodes' | 'logic';
 
 export default function EditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -76,6 +77,7 @@ function ExistingEditor({ scriptId }: { scriptId: number }) {
     { key: 'npcs', label: 'NPC' },
     { key: 'attributes', label: '属性' },
     { key: 'nodes', label: '节点' },
+    { key: 'logic', label: '剧本逻辑' },
   ];
 
   if (!scriptData) {
@@ -137,7 +139,13 @@ function ExistingEditor({ scriptId }: { scriptId: number }) {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-[var(--rule)] p-6 min-h-[60vh]">
+      <div
+        className={`rounded-xl shadow-sm border p-6 min-h-[60vh] ${
+          activeTab === 'logic'
+            ? 'bg-slate-950 border-slate-800'
+            : 'bg-white border-[var(--rule)]'
+        }`}
+      >
         {activeTab === 'world' && (
           <div className="space-y-6">
             <CoverSection
@@ -159,6 +167,13 @@ function ExistingEditor({ scriptId }: { scriptId: number }) {
         )}
         {activeTab === 'nodes' && (
           <NodeEditor scriptId={scriptId} nodes={nodesData || []} onRefresh={refetchNodes} />
+        )}
+        {activeTab === 'logic' && (
+          <LogicConfigPanel
+            scriptId={scriptId}
+            scriptData={scriptData}
+            onRefreshScript={refetchScript}
+          />
         )}
       </div>
     </div>

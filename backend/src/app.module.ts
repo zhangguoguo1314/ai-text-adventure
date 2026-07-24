@@ -22,6 +22,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { CreatorModule } from './creator/creator.module';
 import { InGameAppModule } from './in-game-app/in-game-app.module';
+import { ScriptLogicModule } from './script-logic/script-logic.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { InGameAppModule } from './in-game-app/in-game-app.module';
     PromotionModule,
     CreatorModule,
     InGameAppModule,
+    ScriptLogicModule,
   ],
   controllers: [AppController],
   providers: [AppService],
