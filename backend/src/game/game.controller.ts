@@ -38,9 +38,9 @@ export class GameController {
   ) {}
 
   @Post('start')
-  @ApiOperation({ summary: '开始新游戏' })
+  @ApiOperation({ summary: '开始新游戏（支持角色创建配置）' })
   async startGame(@Req() req: any, @Body() dto: StartGameDto) {
-    return this.gameService.startGame(req.user.id, dto.scriptId);
+    return this.gameService.startGame(req.user.id, dto.scriptId, dto.characterConfig);
   }
 
   @Get(':sessionId')

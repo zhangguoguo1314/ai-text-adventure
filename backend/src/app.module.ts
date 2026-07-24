@@ -19,6 +19,9 @@ import { RankingModule } from './ranking/ranking.module';
 import { AchievementModule } from './achievement/achievement.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { TemplatesModule } from './templates/templates.module';
+import { PromotionModule } from './promotion/promotion.module';
+import { CreatorModule } from './creator/creator.module';
+import { InGameAppModule } from './in-game-app/in-game-app.module';
 
 @Module({
   imports: [
@@ -40,6 +43,9 @@ import { TemplatesModule } from './templates/templates.module';
     AchievementModule,
     RealtimeModule,
     TemplatesModule,
+    PromotionModule,
+    CreatorModule,
+    InGameAppModule,
   ],
   controllers: [AppController],
   providers: [AppService],

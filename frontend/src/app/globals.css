@@ -147,6 +147,17 @@ body {
   background: var(--muted);
 }
 
+/* ========== 隐藏滚动条工具类 ========== */
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Firefox */
 * {
   scrollbar-width: thin;

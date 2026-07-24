@@ -8,7 +8,7 @@ export class RankingController {
   constructor(private readonly rankingService: RankingService) {}
 
   @Get('scripts')
-  @ApiOperation({ summary: '剧本排行榜（按游玩次数）' })
+  @ApiOperation({ summary: '剧本排行榜（日榜/周榜/月榜，按游玩次数）' })
   async getScriptsRanking(
     @Query('period') period?: string,
     @Query('category') category?: string,
@@ -17,6 +17,20 @@ export class RankingController {
   ) {
     return this.rankingService.getScriptsRanking(
       period || 'week',
+      category || 'all',
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+    );
+  }
+
+  @Get('new-scripts')
+  @ApiOperation({ summary: '新作榜（7天内发布的剧本，按游玩次数降序）' })
+  async getNewScriptsRanking(
+    @Query('category') category?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.rankingService.getNewScriptsRanking(
       category || 'all',
       page ? Number(page) : 1,
       limit ? Number(limit) : 20,

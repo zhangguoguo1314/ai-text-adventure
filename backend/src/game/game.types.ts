@@ -70,6 +70,45 @@ export interface GameState {
   endings: string[];                       // 已达成结局
   achievements: string[];                  // 游戏内已达成成就
   combat: CombatState | null;             // 战斗状态
+  // UU平台对标扩展
+  characterConfig?: CharacterConfig;       // 角色创建配置（开局选择的家世/性格/特质等）
+  relationshipFlags?: Record<string, RelationshipFlag>; // NPC关系标记（是否告白/是否结缘/是否背叛等）
+  eventLog?: GameEvent[];                  // 重要事件日志（蝴蝶效应追踪）
+  customData?: Record<string, any>;        // 剧本自定义数据（供内置APP等使用）
+}
+
+/** 角色创建配置 - 对标UU的家世/性格/特质等开局选择 */
+export interface CharacterConfig {
+  origin?: string;           // 出身/家世
+  personality?: string;      // 性格
+  talent?: string;           // 天赋
+  ambition?: string;         // 志向
+  path?: string;             // 修炼/发展路线
+  gender?: string;           // 性别（全性向支持）
+  appearance?: string;       // 外貌描述
+  background?: string;       // 背景故事
+  customFields?: Record<string, string>; // 自定义字段
+}
+
+/** NPC关系标记 - 追踪关键关系节点 */
+export interface RelationshipFlag {
+  met: boolean;              // 是否已相遇
+  friend: boolean;           // 是否成为朋友
+  close: boolean;            // 是否亲密
+  lover: boolean;            // 是否恋人
+  betrayed: boolean;         // 是否背叛
+  customFlags?: Record<string, boolean>;
+}
+
+/** 游戏事件日志 - 蝴蝶效应追踪 */
+export interface GameEvent {
+  id: string;
+  type: 'choice' | 'combat' | 'social' | 'discovery' | 'romance' | 'death' | 'custom';
+  description: string;
+  chapter: number;
+  day: number;
+  consequences?: string;     // 后果描述
+  timestamp: number;
 }
 
 /** AI 返回的扩展 JSON 格式 */

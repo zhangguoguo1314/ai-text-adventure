@@ -4,21 +4,33 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import CharacterCreation from '@/components/game/CharacterCreation';
 
 export default function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
   const { isAuthenticated } = useAuthStore();
   const [script, setScript] = useState<any>(null);
+  const [template, setTemplate] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [startingGame, setStartingGame] = useState(false);
+  const [showCharCreation, setShowCharCreation] = useState(false);
 
-  // 加载剧本详情
+  // 加载剧本详情（含模板信息）
   useEffect(() => {
     api
       .get(`/scripts/${id}`)
       .then((res: any) => {
         setScript(res.data);
+        // 如果剧本有关联的模板且有charConfig，加载模板信息
+        if (res.data?.styleId) {
+          return api.get(`/templates/${res.data.styleId}`);
+        }
+      })
+      .then((res: any) => {
+        if (res?.data) {
+          setTemplate(res.data);
+        }
       })
       .catch(() => {
         setScript(null);
@@ -36,10 +48,32 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
 
     if (!script) return;
 
+    // 检查是否有角色创建配置
+    const charConfig = template?.charConfig;
+    if (charConfig && typeof charConfig === 'object') {
+      try {
+        const parsed = typeof charConfig === 'string' ? JSON.parse(charConfig) : charConfig;
+        if (parsed && Object.keys(parsed).length > 0) {
+          setShowCharCreation(true);
+          return;
+        }
+      } catch {
+        // 解析失败，直接开始游戏
+      }
+    }
+
+    // 没有角色创建配置，直接开始
+    await startGame();
+  };
+
+  const startGame = async (characterConfig?: any) => {
+    if (!script) return;
+
     setStartingGame(true);
     try {
       const res: any = await api.post('/game/start', {
         scriptId: script.id,
+        characterConfig: characterConfig || undefined,
       });
       const sessionId = res.data.sessionId;
       router.push(`/play/${sessionId}`);
@@ -146,6 +180,22 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       </div>
+
+      {/* 角色创建弹窗 */}
+      {showCharCreation && template?.charConfig && (
+        <CharacterCreation
+          charConfig={typeof template.charConfig === 'string' ? JSON.parse(template.charConfig) : template.charConfig}
+          scriptTitle={script?.title}
+          onComplete={(config) => {
+            setShowCharCreation(false);
+            startGame(config);
+          }}
+          onSkip={() => {
+            setShowCharCreation(false);
+            startGame();
+          }}
+        />
+      )}
     </div>
   );
 }

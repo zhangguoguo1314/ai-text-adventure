@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsNotEmpty, IsIn, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsNotEmpty, IsIn, Min, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class StartGameDto {
@@ -6,6 +6,11 @@ export class StartGameDto {
   @IsNumber()
   @IsNotEmpty()
   scriptId: number;
+
+  @ApiProperty({ description: '角色创建配置（家世/性格/特质等开局选择）', required: false })
+  @IsOptional()
+  @IsObject()
+  characterConfig?: Record<string, any>;
 }
 
 export class ChatDto {

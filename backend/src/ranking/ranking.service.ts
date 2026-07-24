@@ -11,9 +11,10 @@ export class RankingService {
 
   /**
    * 按周期返回时间窗口大小（毫秒）
-   * week / total 的趋势对比均使用 7 天窗口
+   * daily=1天, week=7天, month=30天, total=不限
    */
   private getDurationMs(period: string): number {
+    if (period === 'daily') return 24 * 60 * 60 * 1000;
     if (period === 'month') return 30 * 24 * 60 * 60 * 1000;
     return 7 * 24 * 60 * 60 * 1000; // week & total trend
   }
@@ -230,6 +231,61 @@ export class RankingService {
         totalIncome: incomeMap.get(authorId) || 0,
       };
     });
+
+    return { items, total, page, limit };
+  }
+
+  // ==================== 新作榜 ====================
+
+  /**
+   * 新作榜：按发布时间排序的最近剧本（7天内发布的，按游玩次数降序）
+   */
+  async getNewScriptsRanking(category = 'all', page = 1, limit = 20) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const where: any = {
+      status: 'published',
+      createdAt: { gte: sevenDaysAgo },
+    };
+    if (category && category !== 'all') where.category = category;
+
+    const total = await this.prisma.script.count({ where });
+
+    const offset = (page - 1) * limit;
+    const scripts = await this.prisma.script.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        cover: true,
+        category: true,
+        desc: true,
+        playCount: true,
+        favCount: true,
+        createdAt: true,
+        author: { select: { id: true, nickname: true, avatar: true } },
+      },
+      orderBy: [{ playCount: 'desc' }, { createdAt: 'desc' }],
+      skip: offset,
+      take: limit,
+    });
+
+    const items = scripts.map((script, index) => ({
+      rank: offset + index + 1,
+      scriptId: script.id,
+      playCount: script.playCount,
+      favCount: script.favCount,
+      isNew: true,
+      publishedAt: script.createdAt,
+      script: {
+        id: script.id,
+        title: script.title,
+        cover: script.cover,
+        category: script.category,
+        desc: script.desc,
+        author: script.author,
+      },
+    }));
 
     return { items, total, page, limit };
   }

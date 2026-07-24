@@ -40,6 +40,8 @@ model User {
   invitation  Invitation?  @relation("InviteeInvitation")
   achievements UserAchievement[]
   scriptTemplates ScriptTemplate[]
+  promotionRewards PromotionReward[]
+  creatorLevel CreatorLevel?
 
   @@map("users")
 }
@@ -90,6 +92,8 @@ model Script {
   sessions    GameSession[]
   comments    Comment[]
   favorites   Favorite[]
+  inGameApps  InGameApp[]
+  tagRelations ScriptTagRelation[]
 
   @@map("scripts")
 }
@@ -383,7 +387,7 @@ model UserAchievement {
 model ScriptTemplate {
   id           Int      @id @default(autoincrement())
   name         String
-  category     String   @default("adventure") // adventure, romance, mystery, horror, scifi, fantasy, school, wuxia
+  category     String   @default("adventure") // adventure, romance, mystery, horror, scifi, fantasy, school, wuxia, cultivation, idol, abo, infinite
   description  String   @default("")
   coverEmoji   String   @default("📖")
   worldSetting String   @default("") @map("world_setting")
@@ -391,14 +395,113 @@ model ScriptTemplate {
   npcTemplate  String   @default("[]") @map("npc_template") // JSON: [{name, personality}]
   attrTemplate String   @default("[]") @map("attr_template") // JSON: [{name, type, defaultVal, minVal, maxVal}]
   nodeTemplate String   @default("[]") @map("node_template") // JSON: [{type, content, choices}]
+  charConfig   String   @default("{}") @map("char_config") // JSON: 角色创建配置（家世/性格/特质等选项）
   useCount     Int      @default(0) @map("use_count")
   rating       Float    @default(0)
   ratingCount  Int      @default(0) @map("rating_count")
   authorId     Int?     @map("author_id") // null = 官方模板
   isOfficial   Boolean  @default(false) @map("is_official")
+  tags         String   @default("[]") // JSON: ["高自由","全性向","养成"]
   createdAt    DateTime @default(now()) @map("created_at")
 
   author User? @relation(fields: [authorId], references: [id])
 
   @@map("script_templates")
+}
+
+// ========================
+// UU平台对标扩展模型
+// ========================
+
+/// 推广奖励 - 用户在社交平台分享获得奖励
+model PromotionReward {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  platform     String   // douyin, xiaohongshu, bilibili, weibo
+  link         String   // 分享链接
+  likesCount   Int      @default(0) @map("likes_count") // 点赞数
+  rewardTier   String   @default("pending") // pending, tier1(10赞), tier2(100赞), tier3(1000赞)
+  rewardAmount Int      @default(0) @map("reward_amount") // 奖励UU币数量
+  status       String   @default("pending") // pending, approved, rejected
+  reviewNote   String?  @map("review_note") // 审核备注
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("promotion_rewards")
+}
+
+/// 内置游戏APP - 剧本内的自定义软件（如校园助手、直播小助手等）
+model InGameApp {
+  id           Int      @id @default(autoincrement())
+  scriptId     Int      @map("script_id")
+  name         String   // APP名称
+  icon         String   @default("📱") // APP图标emoji
+  description  String   @default("")
+  appType      String   @default("utility") // utility, social, shop, ranking, quest, custom
+  config       String   @default("{}") // JSON: APP配置（功能模块、数据源等）
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@map("in_game_apps")
+}
+
+/// 作品标签 - 用于分类和搜索
+model ScriptTag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  category  String   @default("general") // general, genre, theme, setting
+  useCount  Int      @default(0) @map("use_count")
+  createdAt DateTime @default(now()) @map("created_at")
+  scripts   ScriptTagRelation[]
+
+  @@map("script_tags")
+}
+
+/// 剧本与标签关联
+model ScriptTagRelation {
+  scriptId  Int @map("script_id")
+  tagId     Int @map("tag_id")
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  tag    ScriptTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([scriptId, tagId])
+  @@map("script_tag_relations")
+}
+
+/// 排行榜快照 - 定时统计排行数据
+model RankingSnapshot {
+  id           Int      @id @default(autoincrement())
+  period       String   // daily, weekly, monthly, new, author
+  scriptId     Int?     @map("script_id")
+  authorId     Int?     @map("author_id")
+  rank         Int
+  playCount    Int      @default(0) @map("play_count")
+  score        Float    @default(0) // 综合评分
+  snapshotDate DateTime @default(now()) @map("snapshot_date")
+
+  @@map("ranking_snapshots")
+}
+
+/// 创作者等级 - 对标UU的创作者分成系统
+model CreatorLevel {
+  userId          Int      @id @map("user_id")
+  level           Int      @default(1) // 1-5级创作者
+  title           String   @default("新人创作者") // 称号
+  totalPlayCount  Int      @default(0) @map("total_play_count")
+  totalIncome     Int      @default(0) @map("total_income")
+  scriptCount     Int      @default(0) @map("script_count")
+  avgRating       Float    @default(0) @map("avg_rating")
+  isVerified      Boolean  @default(false) @map("is_verified") // 是否通过审核成为创作者
+  verifiedAt      DateTime? @map("verified_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("creator_levels")
 }

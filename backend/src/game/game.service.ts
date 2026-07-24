@@ -82,6 +82,10 @@ export class GameService {
       endings: raw.endings ?? [],
       achievements: raw.achievements ?? [],
       combat: raw.combat ?? null,
+      characterConfig: raw.characterConfig ?? undefined,
+      relationshipFlags: raw.relationshipFlags ?? {},
+      eventLog: raw.eventLog ?? [],
+      customData: raw.customData ?? {},
     };
   }
 
@@ -91,8 +95,9 @@ export class GameService {
 
   /**
    * 开始新游戏
+   * @param characterConfig 可选的角色创建配置（对标UU的家世/性格/特质等开局选择）
    */
-  async startGame(userId: number, scriptId: number) {
+  async startGame(userId: number, scriptId: number, characterConfig?: any) {
     const script = await this.prisma.script.findUnique({
       where: { id: scriptId },
       include: { npcs: true, attributes: true },
@@ -129,10 +134,19 @@ export class GameService {
     if (attributes['防御力'] === undefined) attributes['防御力'] = 5;
     if (attributes['敏捷'] === undefined) attributes['敏捷'] = 10;
 
-    // 初始化 NPC 好感度
+    // 初始化 NPC 好感度和关系标记
     const npcRelations: Record<string, number> = {};
+    const relationshipFlags: Record<string, any> = {};
     for (const npc of script.npcs) {
       npcRelations[npc.name] = 0;
+      relationshipFlags[npc.name] = {
+        met: false,
+        friend: false,
+        close: false,
+        lover: false,
+        betrayed: false,
+        customFlags: {},
+      };
     }
 
     // 使用扩展后的 GameState 初始化
@@ -152,6 +166,11 @@ export class GameService {
       endings: [],
       achievements: [],
       combat: null,
+      // UU平台对标扩展
+      characterConfig: characterConfig || undefined,
+      relationshipFlags,
+      eventLog: [],
+      customData: {},
     };
 
     // 创建 game_session
@@ -357,6 +376,26 @@ export class GameService {
       systemPrompt += `【世界观规则】\n${worldSetting}\n\n`;
     }
 
+    // 角色创建配置（对标UU的家世/性格/特质等开局选择）
+    if (gameState.characterConfig) {
+      systemPrompt += `【角色创建配置】\n`;
+      const cc = gameState.characterConfig;
+      if (cc.origin) systemPrompt += `- 出身/家世: ${cc.origin}\n`;
+      if (cc.personality) systemPrompt += `- 性格: ${cc.personality}\n`;
+      if (cc.talent) systemPrompt += `- 天赋: ${cc.talent}\n`;
+      if (cc.ambition) systemPrompt += `- 志向: ${cc.ambition}\n`;
+      if (cc.path) systemPrompt += `- 发展路线: ${cc.path}\n`;
+      if (cc.gender) systemPrompt += `- 性别: ${cc.gender}\n`;
+      if (cc.appearance) systemPrompt += `- 外貌: ${cc.appearance}\n`;
+      if (cc.background) systemPrompt += `- 背景故事: ${cc.background}\n`;
+      if (cc.customFields) {
+        for (const [key, val] of Object.entries(cc.customFields)) {
+          systemPrompt += `- ${key}: ${val}\n`;
+        }
+      }
+      systemPrompt += `\n注意：以上角色配置应在叙事中体现，影响NPC对玩家的态度和剧情走向。\n\n`;
+    }
+
     // 当前位置 + 时间 + 章节进度
     systemPrompt += `【当前场景信息】\n`;
     systemPrompt += `- 位置: ${gameState.location}\n`;
@@ -397,13 +436,25 @@ export class GameService {
       systemPrompt += '\n';
     }
 
-    // NPC 列表（含好感度等级描述）
+    // NPC 列表（含好感度等级描述和关系标记）
     if (npcList.length > 0) {
       systemPrompt += `【NPC列表】\n`;
       for (const npc of npcList) {
         const relation = gameState.npcRelations[npc.name] ?? 0;
         const level = this.getRelationLevel(relation);
-        systemPrompt += `- ${npc.name}: ${npc.personality}（好感度: ${relation} - ${level}）\n`;
+        // 关系标记
+        const flags = gameState.relationshipFlags?.[npc.name];
+        let flagStr = '';
+        if (flags) {
+          const activeFlags: string[] = [];
+          if (flags.met) activeFlags.push('已相遇');
+          if (flags.friend) activeFlags.push('朋友');
+          if (flags.close) activeFlags.push('亲密');
+          if (flags.lover) activeFlags.push('恋人');
+          if (flags.betrayed) activeFlags.push('已背叛');
+          if (activeFlags.length > 0) flagStr = ` [${activeFlags.join('/')}]`;
+        }
+        systemPrompt += `- ${npc.name}: ${npc.personality}（好感度: ${relation} - ${level}${flagStr}）\n`;
       }
       systemPrompt += '\n';
     }
@@ -436,6 +487,18 @@ export class GameService {
       systemPrompt += `- 敌方: ${combat.enemyName} (HP: ${combat.enemyHp}/${combat.enemyMaxHp}, 攻击: ${combat.enemyAttack}, 防御: ${combat.enemyDefense})\n`;
       systemPrompt += `- 玩家HP: ${combat.playerHp}/${combat.playerMaxHp}, 防御: ${combat.playerDefense}\n`;
       systemPrompt += `- 当前回合: ${combat.turn}\n\n`;
+    }
+
+    // 重要事件日志（蝴蝶效应追踪 - 显示最近5条）
+    if (gameState.eventLog && gameState.eventLog.length > 0) {
+      const recentEvents = gameState.eventLog.slice(-5);
+      systemPrompt += `【近期重要事件（蝴蝶效应追踪）】\n`;
+      for (const evt of recentEvents) {
+        systemPrompt += `- 第${evt.chapter}章第${evt.day}天 [${evt.type}]: ${evt.description}`;
+        if (evt.consequences) systemPrompt += ` → 后果: ${evt.consequences}`;
+        systemPrompt += '\n';
+      }
+      systemPrompt += '\n注意：以上事件可能在未来产生连锁反应，请在叙事中适当呼应。\n\n';
     }
 
     // AI 返回格式说明
