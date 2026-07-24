@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { SocketProvider } from "@/providers/SocketProvider";
 import { ToastProvider } from "@/components/common/Toast";
 import Sidebar from "@/components/layout/Sidebar";
+import AnnouncementBanner from "@/components/common/AnnouncementBanner";
 
 export const metadata: Metadata = {
   title: "AI Text Adventure - AI 互动文字冒险",
@@ -44,16 +46,20 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             <QueryProvider>
-              <div className="flex min-h-screen theme-transition">
-                {/* 侧边栏 */}
-                <Sidebar />
-                {/* 主内容区域 */}
-                <main className="flex-1 lg:ml-60 transition-all duration-300">
-                  <div className="p-4 md:p-6 lg:p-8">
-                    {children}
-                  </div>
-                </main>
-              </div>
+              <SocketProvider>
+                <div className="flex min-h-screen theme-transition">
+                  {/* 侧边栏 */}
+                  <Sidebar />
+                  {/* 主内容区域 */}
+                  <main className="flex-1 lg:ml-60 transition-all duration-300">
+                    {/* 顶部公告横幅 */}
+                    <AnnouncementBanner />
+                    <div className="p-4 md:p-6 lg:p-8">
+                      {children}
+                    </div>
+                  </main>
+                </div>
+              </SocketProvider>
             </QueryProvider>
           </ToastProvider>
         </ThemeProvider>

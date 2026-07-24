@@ -16,6 +16,7 @@ async function bootstrap() {
   );
 
   // CORS - 允许所有来源（生产环境通过 Nginx 控制跨域）
+  // 同时供 socket.io 握手复用
   app.enableCors({
     origin: true,
     credentials: true,
@@ -35,5 +36,6 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application running on http://localhost:${port}`);
   console.log(`Swagger docs: http://localhost:${port}/api-docs`);
+  console.log(`WebSocket (socket.io): ws://localhost:${port}/socket.io`);
 }
 bootstrap();

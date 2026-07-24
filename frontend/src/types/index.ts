@@ -120,6 +120,50 @@ export interface StyleTemplate {
   useCount: number;
 }
 
+/* ===== 剧本模板 ===== */
+export interface TemplateNpc {
+  name: string;
+  personality?: string;
+}
+
+export interface TemplateAttr {
+  name: string;
+  type?: string;
+  defaultVal?: string | number | null;
+  minVal?: number | null;
+  maxVal?: number | null;
+}
+
+export interface TemplateNodeChoice {
+  text: string;
+  nextNodeId?: number | null;
+}
+
+export interface TemplateNode {
+  type?: string;
+  content?: string;
+  choices?: TemplateNodeChoice[];
+}
+
+export interface ScriptTemplate {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  coverEmoji: string;
+  worldSetting: string;
+  stylePrompt: string;
+  npcTemplate: TemplateNpc[];
+  attrTemplate: TemplateAttr[];
+  nodeTemplate: TemplateNode[];
+  useCount: number;
+  rating: number;
+  ratingCount: number;
+  authorId: number | null;
+  isOfficial: boolean;
+  createdAt: string;
+}
+
 /* ===== 自定义 API 配置 ===== */
 export interface CustomApiConfig {
   id: number;

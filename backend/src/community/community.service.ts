@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeService } from '../realtime/realtime.service';
 
 @Injectable()
 export class CommunityService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private realtimeService: RealtimeService,
+  ) {}
 
   /**
    * 动态列表（分页+排序）
@@ -132,6 +136,29 @@ export class CommunityService {
         where: { id: postId },
         data: { likeCount: { increment: 1 } },
       });
+
+      // 通知帖子作者（不通知自己）
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { userId: true },
+      });
+      if (post && post.userId !== userId) {
+        const liker = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { nickname: true },
+        });
+        const notification = await this.prisma.notification.create({
+          data: {
+            userId: post.userId,
+            type: 'like',
+            title: '新的点赞',
+            content: `${liker?.nickname || '匿名用户'} 赞了你的动态`,
+          },
+        });
+        // 实时推送通知
+        this.realtimeService.sendNotification(post.userId, notification);
+      }
+
       return { success: true, data: { liked: true } };
     }
   }
@@ -170,7 +197,7 @@ export class CommunityService {
         where: { id: userId },
         select: { nickname: true },
       });
-      await this.prisma.notification.create({
+      const notification = await this.prisma.notification.create({
         data: {
           userId: post.userId,
           type: 'comment',
@@ -178,6 +205,8 @@ export class CommunityService {
           content: `${commenter?.nickname || '匿名用户'} 评论了你的动态`,
         },
       });
+      // 实时推送通知
+      this.realtimeService.sendNotification(post.userId, notification);
     }
 
     return { success: true, data: comment };
@@ -311,7 +340,7 @@ export class CommunityService {
         where: { id: followerId },
         select: { nickname: true },
       });
-      await this.prisma.notification.create({
+      const notification = await this.prisma.notification.create({
         data: {
           userId: followingId,
           type: 'follow',
@@ -319,6 +348,8 @@ export class CommunityService {
           content: `${follower?.nickname || '匿名用户'} 关注了你`,
         },
       });
+      // 实时推送通知
+      this.realtimeService.sendNotification(followingId, notification);
 
       return { success: true, data: { following: true } };
     }

@@ -7,23 +7,27 @@ import { useAppStore } from '@/store/appStore';
 import { useState } from 'react';
 import ModelExchangeModal from '@/components/settings/ModelExchangeModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
+import NotificationBell from '@/components/common/NotificationBell';
 
 const navLinks: Array<{ label: string; href: string; icon?: string }> = [
   { label: '发现', href: '/' },
   { label: '探索', href: '/explore', icon: 'compass' },
+  { label: '模板市场', href: '/templates', icon: 'template' },
   { label: '我的作品', href: '/my-works' },
   { label: '创作仪表盘', href: '/dashboard', icon: 'chart' },
   { label: '社区广场', href: '/plaza' },
+  { label: '排行榜', href: '/ranking', icon: 'trophy' },
 ];
 
 const createLinks = [
   { label: '开始创作', href: '/create' },
-  { label: '模板库', href: '/plaza?type=template' },
+  { label: '模板市场', href: '/templates' },
   { label: '我的创作', href: '/my-works' },
 ];
 
 const accountLinks: Array<{ label: string; href: string; icon?: string }> = [
   { label: '设置', href: '/profile' },
+  { label: '成就', href: '/achievements', icon: 'medal' },
   { label: '邀请奖励', href: '/invite', icon: 'gift' },
   { label: '关注动态', href: '/plaza?type=following' },
 ];
@@ -57,7 +61,7 @@ export default function Sidebar() {
           sidebarCollapsed ? '-translate-x-full lg:w-16 lg:translate-x-0' : 'w-60'
         }`}
       >
-        {/* Logo */}
+        {/* Logo + 通知铃铛 */}
         <div className="flex items-center gap-3 px-5 h-16 border-b border-violet-800">
           <button
             onClick={toggleSidebar}
@@ -68,10 +72,14 @@ export default function Sidebar() {
             </svg>
           </button>
           {!sidebarCollapsed && (
-            <Link href="/" className="text-lg font-bold text-violet-200 hover:text-white">
+            <Link href="/" className="text-lg font-bold text-violet-200 hover:text-white flex-1 min-w-0 truncate">
               AI Text Adventure
             </Link>
           )}
+          {/* 顶部栏通知铃铛 */}
+          <div className={sidebarCollapsed ? '' : 'ml-auto'}>
+            <NotificationBell onDark />
+          </div>
         </div>
 
         {/* Main Nav */}
@@ -102,9 +110,19 @@ export default function Sidebar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     )}
+                    {link.icon === 'template' && (
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    )}
                     {link.icon === 'chart' && (
                       <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    )}
+                    {link.icon === 'trophy' && (
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                       </svg>
                     )}
                     {link.label}
@@ -159,6 +177,11 @@ export default function Sidebar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12v10H4V12M2 7h20v5H2V7zm10 5a2 2 0 012 2v0a2 2 0 01-2 2 2 2 0 01-2-2v0a2 2 0 012-2zm0 0V7m0 0a3 3 0 00-3-3 2.5 2.5 0 00-2.5 2.5M12 7a3 3 0 013-3 2.5 2.5 0 012.5 2.5" />
                       </svg>
                     )}
+                    {link.icon === 'medal' && (
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    )}
                     {link.label}
                   </Link>
                 );
@@ -175,16 +198,7 @@ export default function Sidebar() {
               </Link>
             </div>
 
-            {/* Notification button */}
-            <div className="relative px-3">
-              <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-violet-300 hover:bg-violet-800/50 hover:text-white transition-colors w-full">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                公告
-                <span className="absolute top-0 right-4 w-2 h-2 bg-red-500 rounded-full" />
-              </button>
-            </div>
+            {/* 通知 / 公告提示：实时通知已迁移至顶部通知铃铛，公告通过页面顶部横幅展示 */}
           </nav>
         )}
 

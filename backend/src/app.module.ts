@@ -15,6 +15,10 @@ import { SearchModule } from './search/search.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AiImageModule } from './ai-image/ai-image.module';
 import { InviteModule } from './invite/invite.module';
+import { RankingModule } from './ranking/ranking.module';
+import { AchievementModule } from './achievement/achievement.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -32,6 +36,10 @@ import { InviteModule } from './invite/invite.module';
     AnalyticsModule,
     AiImageModule,
     InviteModule,
+    RankingModule,
+    AchievementModule,
+    RealtimeModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

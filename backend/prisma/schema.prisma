@@ -38,6 +38,8 @@ model User {
   notifications Notification[]
   invitations Invitation[] @relation("InviterInvitations")
   invitation  Invitation?  @relation("InviteeInvitation")
+  achievements UserAchievement[]
+  scriptTemplates ScriptTemplate[]
 
   @@map("users")
 }
@@ -347,4 +349,56 @@ model Invitation {
   invitee User @relation("InviteeInvitation", fields: [inviteeId], references: [id])
 
   @@map("invitations")
+}
+
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String   @default("")
+  icon        String   @default("🏆")
+  category    String   @default("general") // general, creator, player, social
+  condition   String   @default("") // JSON: { type, threshold }
+  reward      Int      @default(0) // UU币奖励
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  achievementId  Int      @map("achievement_id")
+  unlockedAt     DateTime @default(now()) @map("unlocked_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement  Achievement  @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model ScriptTemplate {
+  id           Int      @id @default(autoincrement())
+  name         String
+  category     String   @default("adventure") // adventure, romance, mystery, horror, scifi, fantasy, school, wuxia
+  description  String   @default("")
+  coverEmoji   String   @default("📖")
+  worldSetting String   @default("") @map("world_setting")
+  stylePrompt  String   @default("") @map("style_prompt")
+  npcTemplate  String   @default("[]") @map("npc_template") // JSON: [{name, personality}]
+  attrTemplate String   @default("[]") @map("attr_template") // JSON: [{name, type, defaultVal, minVal, maxVal}]
+  nodeTemplate String   @default("[]") @map("node_template") // JSON: [{type, content, choices}]
+  useCount     Int      @default(0) @map("use_count")
+  rating       Float    @default(0)
+  ratingCount  Int      @default(0) @map("rating_count")
+  authorId     Int?     @map("author_id") // null = 官方模板
+  isOfficial   Boolean  @default(false) @map("is_official")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@map("script_templates")
 }

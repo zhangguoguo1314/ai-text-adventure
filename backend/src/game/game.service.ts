@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { RealtimeService } from '../realtime/realtime.service';
 
 export interface GameState {
   currentNodeId: number | null;
@@ -21,6 +22,7 @@ export class GameService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private realtimeService: RealtimeService,
   ) {}
 
   /**
@@ -398,6 +400,22 @@ export class GameService {
         totalCost: { increment: cost },
       },
     });
+
+    // 通知用户余额变更
+    const latestBalance = await this.prisma.userBalance.findUnique({
+      where: { userId },
+    });
+    if (latestBalance) {
+      this.realtimeService.sendBalanceUpdate(userId, {
+        cost,
+        totalTokens,
+        permanentBalance: latestBalance.permanentBalance,
+        tempBalance: latestBalance.tempBalance,
+        total:
+          latestBalance.permanentBalance + latestBalance.tempBalance,
+        message: `本次消耗 ${cost} UU币`,
+      });
+    }
   }
 
   /**

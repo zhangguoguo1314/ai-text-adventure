@@ -17,6 +17,19 @@ const createTypes = [
     featured: true,
   },
   {
+    key: 'template',
+    label: '从模板创建',
+    desc: '浏览模板市场，选择官方或社区模板一键创建剧本，快速开始创作',
+    icon: (
+      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      </svg>
+    ),
+    tags: ['官方模板', '一键创建', '快速上手'],
+    href: '/templates',
+    featured: false,
+  },
+  {
     key: 'app',
     label: '创作 AI 应用',
     desc: '构建基于大语言模型的智能应用，定义对话流程和工具调用',

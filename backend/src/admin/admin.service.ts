@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeService } from '../realtime/realtime.service';
 import {
   QueryUsersDto,
   UpdateUserStatusDto,
@@ -18,7 +19,10 @@ import {
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private realtimeService: RealtimeService,
+  ) {}
 
   // ==================== 权限校验 ====================
 
@@ -246,6 +250,18 @@ export class AdminService {
     const updatedBalance = await this.prisma.userBalance.findUnique({
       where: { userId: targetId },
     });
+
+    // 实时通知用户余额变更
+    if (updatedBalance) {
+      this.realtimeService.sendBalanceUpdate(targetId, {
+        amount: dto.amount,
+        permanentBalance: updatedBalance.permanentBalance,
+        tempBalance: updatedBalance.tempBalance,
+        total:
+          updatedBalance.permanentBalance + updatedBalance.tempBalance,
+        message: `管理员${dto.amount > 0 ? '赠送' : '扣除'} ${Math.abs(dto.amount)} UU币`,
+      });
+    }
 
     return {
       success: true,
@@ -602,6 +618,9 @@ export class AdminService {
         type: dto.type || 'normal',
       },
     });
+
+    // 实时广播公告给所有在线用户
+    this.realtimeService.broadcastAnnouncement(announcement);
 
     return { success: true, data: announcement, message: '公告创建成功' };
   }
