@@ -9,12 +9,22 @@ import {
   UseGuards,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { GameService } from './game.service';
 import { AiService } from './ai.service';
-import { StartGameDto, ChatDto, SaveGameDto } from './dto/game.dto';
+import {
+  StartGameDto,
+  ChatDto,
+  SaveGameDto,
+  UseItemDto,
+  UseSkillDto,
+  CombatActionDto,
+  TradeDto,
+  NpcDialogueDto,
+} from './dto/game.dto';
 import { CombinedAuthGuard } from '../auth/auth.guard';
 
 @ApiTags('游戏引擎')
@@ -69,9 +79,9 @@ export class GameController {
       const history = [...gameState.history];
 
       // 添加玩家最新行动
-      history.push({ role: 'user', content: dto.action });
+      history.push({ role: 'player', content: dto.action, type: 'narrative' });
 
-      // 构建系统 prompt
+      // 构建系统 prompt（使用增强版）
       const systemPrompt = this.gameService.buildPrompt(
         script.worldSetting || '',
         gameState,
@@ -81,13 +91,17 @@ export class GameController {
         })),
       );
 
-      const messages = [
+      // 将 GameMessage[] 转换为 AI 消息格式
+      const aiMessages = [
         { role: 'system', content: systemPrompt },
-        ...history.slice(-20), // 保留最近20条对话避免 token 过多
+        ...history.slice(-20).map((msg: any) => ({
+          role: msg.role === 'player' ? 'user' : msg.role === 'system' ? 'system' : 'assistant',
+          content: msg.content,
+        })),
       ];
 
       // 预估 token 数并检查余额
-      const inputChars = messages.reduce(
+      const inputChars = aiMessages.reduce(
         (sum: number, m: any) => sum + m.content.length,
         0,
       );
@@ -96,7 +110,7 @@ export class GameController {
       await this.gameService.checkBalance(userId, estimatedInputTokens);
 
       // 调用 AI 流式生成
-      const stream = await this.aiService.streamGenerate(messages);
+      const stream = await this.aiService.streamGenerate(aiMessages);
 
       // 收集完整文本用于后续处理
       let fullText = '';
@@ -108,45 +122,42 @@ export class GameController {
           fullText += chunk.content;
           outputTokens = Math.ceil(fullText.length / 4);
           res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-        } else if (chunk.type === 'choices') {
-          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-        } else if (chunk.type === 'attribute_change') {
-          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-        } else if (chunk.type === 'error') {
+        } else {
+          // 其他所有类型的 SSE 消息都透传给前端
           res.write(`data: ${JSON.stringify(chunk)}\n\n`);
         }
       });
 
       stream.on('end', () => {
-        // 尝试解析完整文本中的 JSON
-        try {
-          const jsonMatch = fullText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
+        // 使用增强版 JSON 解析
+        const { parsed, events } = this.aiService.parseAiResponse(fullText);
 
-            // 处理属性变化
-            if (
-              parsed.attribute_changes &&
-              Object.keys(parsed.attribute_changes).length > 0
-            ) {
-              for (const [key, val] of Object.entries(
-                parsed.attribute_changes,
-              )) {
-                const numVal = Number(val);
-                if (gameState.attributes[key] !== undefined) {
-                  gameState.attributes[key] += numVal;
-                } else {
-                  gameState.attributes[key] = numVal;
-                }
-              }
-            }
-          }
-        } catch {
-          // JSON 解析失败，使用原始文本
+        // 将解析出的事件作为独立 SSE 消息发送给前端
+        for (const event of events) {
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
+        }
+
+        // 将 AI 返回的变化应用到 GameState
+        if (parsed) {
+          AiService.applyAiResponseToGameState(parsed, gameState);
         }
 
         // 更新对话历史
-        gameState.history.push({ role: 'assistant', content: fullText });
+        gameState.history.push({
+          role: 'narrator',
+          content: fullText,
+          type: 'narrative',
+        });
+
+        // 如果触发了战斗，添加战斗开始消息到历史
+        if (parsed?.combat?.trigger && parsed.combat.enemy) {
+          gameState.history.push({
+            role: 'narrator',
+            content: `战斗开始！${parsed.combat.enemy.name} 出现了！`,
+            type: 'combat',
+            metadata: { event: 'combat_start', enemy: parsed.combat.enemy },
+          });
+        }
 
         // 异步更新游戏状态和扣费（不阻塞响应）
         this.gameService
@@ -200,6 +211,102 @@ export class GameController {
       );
       res.end();
     }
+  }
+
+  // ========================
+  // 新增接口端点
+  // ========================
+
+  @Post(':sessionId/use-item')
+  @ApiOperation({ summary: '使用/装备物品' })
+  async useItem(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: UseItemDto,
+    @Req() req: any,
+  ) {
+    return this.gameService.useItem(
+      Number(sessionId),
+      req.user.id,
+      dto.itemId,
+      dto.target,
+    );
+  }
+
+  @Post(':sessionId/use-skill')
+  @ApiOperation({ summary: '使用技能' })
+  async useSkill(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: UseSkillDto,
+    @Req() req: any,
+  ) {
+    return this.gameService.useSkill(
+      Number(sessionId),
+      req.user.id,
+      dto.skillId,
+    );
+  }
+
+  @Post(':sessionId/combat-action')
+  @ApiOperation({ summary: '战斗行动' })
+  async combatAction(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: CombatActionDto,
+    @Req() req: any,
+  ) {
+    return this.gameService.processCombat(
+      Number(sessionId),
+      req.user.id,
+      dto.action,
+      { skillId: dto.skillId, itemId: dto.itemId },
+    );
+  }
+
+  @Get(':sessionId/dialogue')
+  @ApiOperation({ summary: '与NPC对话' })
+  async getNpcDialogue(
+    @Param('sessionId') sessionId: string,
+    @Query('npcName') npcName: string,
+    @Req() req: any,
+  ) {
+    return this.gameService.getNpcDialogue(
+      Number(sessionId),
+      req.user.id,
+      npcName,
+    );
+  }
+
+  @Post(':sessionId/trade')
+  @ApiOperation({ summary: '商店交易' })
+  async trade(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: TradeDto,
+    @Req() req: any,
+  ) {
+    return this.gameService.trade(
+      Number(sessionId),
+      req.user.id,
+      dto.action,
+      dto.itemId,
+      dto.quantity,
+    );
+  }
+
+  @Get(':sessionId/endings')
+  @ApiOperation({ summary: '获取所有已达成结局' })
+  async getEndings(
+    @Param('sessionId') sessionId: string,
+    @Req() req: any,
+  ) {
+    return this.gameService.getEndings(Number(sessionId), req.user.id);
+  }
+
+  @Get(':sessionId/achievements')
+  @ApiOperation({ summary: '获取游戏内成就' })
+  async getAchievements(
+    @Param('sessionId') sessionId: string,
+    @Req() req: any,
+  ) {
+    return this.gameService.getAchievements(Number(sessionId), req.user.id);
   }
 
   @Get(':sessionId/saves')
