@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ScriptNpc } from '@/types';
 import api from '@/lib/api';
+import AiImageGenerator from './AiImageGenerator';
 
 interface NpcPanelProps {
   scriptId: number;
@@ -16,6 +17,7 @@ export default function NpcPanel({ scriptId, npcs, onRefresh }: NpcPanelProps) {
   const [name, setName] = useState('');
   const [personality, setPersonality] = useState('');
   const [saving, setSaving] = useState(false);
+  const [avatarGenId, setAvatarGenId] = useState<number | null>(null);
 
   const resetForm = () => {
     setName('');
@@ -62,6 +64,17 @@ export default function NpcPanel({ scriptId, npcs, onRefresh }: NpcPanelProps) {
       onRefresh();
     } catch {
       // handle error
+    }
+  };
+
+  // AI 生成头像后保存到 NPC
+  const handleAvatarGenerated = async (npcId: number, url: string) => {
+    try {
+      await api.put(`/scripts/${scriptId}/npcs/${npcId}`, { avatar: url });
+      setAvatarGenId(null);
+      onRefresh();
+    } catch {
+      // 保存失败时仍保留预览
     }
   };
 
@@ -134,33 +147,81 @@ export default function NpcPanel({ scriptId, npcs, onRefresh }: NpcPanelProps) {
         {npcs.map((npc) => (
           <div
             key={npc.id}
-            className="flex items-start justify-between p-3 rounded-lg border border-[var(--rule)] hover:border-violet-200 transition-colors"
+            className="p-3 rounded-lg border border-[var(--rule)] hover:border-violet-200 transition-colors"
           >
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm text-[var(--ink)]">{npc.name}</div>
-              {npc.personality && (
-                <p className="text-xs text-[var(--muted)] mt-1 line-clamp-2">{npc.personality}</p>
-              )}
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                {/* 头像 */}
+                <div className="flex-shrink-0">
+                  {npc.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={npc.avatar}
+                      alt={npc.name}
+                      className="w-10 h-10 rounded-full object-cover border border-[var(--rule)]"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[var(--bg3)] flex items-center justify-center text-[var(--muted)] text-sm font-medium">
+                      {npc.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm text-[var(--ink)]">{npc.name}</div>
+                  {npc.personality && (
+                    <p className="text-xs text-[var(--muted)] mt-1 line-clamp-2">{npc.personality}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0 ml-2">
+                <button
+                  onClick={() => startEdit(npc)}
+                  className="p-1 rounded text-[var(--muted)] hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                  title="编辑"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleDelete(npc.id)}
+                  className="p-1 rounded text-[var(--muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title="删除"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="flex gap-1 flex-shrink-0 ml-2">
-              <button
-                onClick={() => startEdit(npc)}
-                className="p-1 rounded text-[var(--muted)] hover:text-violet-600 hover:bg-violet-50 transition-colors"
-                title="编辑"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => handleDelete(npc.id)}
-                className="p-1 rounded text-[var(--muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
-                title="删除"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+
+            {/* AI 生成头像入口 */}
+            <div className="mt-2 pt-2 border-t border-[var(--rule)]">
+              {avatarGenId === npc.id ? (
+                <div className="pt-1">
+                  <AiImageGenerator
+                    type="avatar"
+                    inputData={{ name: npc.name, personality: npc.personality }}
+                    onGenerated={(url) => handleAvatarGenerated(npc.id, url)}
+                  />
+                  <button
+                    onClick={() => setAvatarGenId(null)}
+                    className="mt-1 text-xs text-[var(--muted)] hover:text-violet-600"
+                  >
+                    收起
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setAvatarGenId(npc.id)}
+                  className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.456-2.456L14.25 6l1.035-.259a3.375 3.375 0 002.456-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                  </svg>
+                  AI 生成头像
+                </button>
+              )}
             </div>
           </div>
         ))}

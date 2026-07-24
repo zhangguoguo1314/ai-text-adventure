@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiImageService } from '../ai-image/ai-image.service';
 import {
   CreateScriptDto,
   UpdateScriptDto,
@@ -12,10 +13,14 @@ import {
   CreateNodeDto,
   UpdateNodeDto,
 } from './dto/scripts.dto';
+import { GenerateCoverDto } from '../ai-image/dto/ai-image.dto';
 
 @Injectable()
 export class ScriptsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aiImageService: AiImageService,
+  ) {}
 
   async list(dto: QueryScriptDto) {
     const page = dto.page || 1;
@@ -398,6 +403,37 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
       console.error('LLM generation failed, using mock data:', error.message);
       return this.generateMockContent(script);
     }
+  }
+
+  /**
+   * AI 生成剧本封面并保存到 Script.cover 字段
+   */
+  async generateCover(
+    scriptId: number,
+    userId: number,
+    dto: GenerateCoverDto,
+  ) {
+    const script = await this.prisma.script.findUnique({
+      where: { id: scriptId },
+    });
+    if (!script) {
+      throw new NotFoundException('剧本不存在');
+    }
+    if (script.authorId !== userId) {
+      return { success: false, message: '无权编辑此剧本' };
+    }
+
+    const result = await this.aiImageService.generateCover(dto);
+    if (!result?.url) {
+      return { success: false, message: '封面生成失败' };
+    }
+
+    const updated = await this.prisma.script.update({
+      where: { id: scriptId },
+      data: { cover: result.url },
+    });
+
+    return { success: true, url: result.url, data: updated };
   }
 
   private async saveGeneratedContent(

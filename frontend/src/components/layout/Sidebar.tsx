@@ -11,7 +11,8 @@ import ThemeToggle from '@/components/common/ThemeToggle';
 const navLinks: Array<{ label: string; href: string; icon?: string }> = [
   { label: '发现', href: '/' },
   { label: '探索', href: '/explore', icon: 'compass' },
-  { label: '我的', href: '/my-works' },
+  { label: '我的作品', href: '/my-works' },
+  { label: '创作仪表盘', href: '/dashboard', icon: 'chart' },
   { label: '社区广场', href: '/plaza' },
 ];
 
@@ -21,8 +22,9 @@ const createLinks = [
   { label: '我的创作', href: '/my-works' },
 ];
 
-const accountLinks = [
+const accountLinks: Array<{ label: string; href: string; icon?: string }> = [
   { label: '设置', href: '/profile' },
+  { label: '邀请奖励', href: '/invite', icon: 'gift' },
   { label: '关注动态', href: '/plaza?type=following' },
 ];
 
@@ -100,6 +102,11 @@ export default function Sidebar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     )}
+                    {link.icon === 'chart' && (
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    )}
                     {link.label}
                   </Link>
                 );
@@ -132,19 +139,30 @@ export default function Sidebar() {
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
                 账户
               </p>
-              {accountLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    pathname === link.href
-                      ? 'bg-violet-800 text-violet-200 font-medium'
-                      : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {accountLinks.map((link) => {
+                const isActive =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : pathname.startsWith(link.href.split('?')[0]);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? 'bg-violet-800 text-violet-200 font-medium'
+                        : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
+                    }`}
+                  >
+                    {link.icon === 'gift' && (
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12v10H4V12M2 7h20v5H2V7zm10 5a2 2 0 012 2v0a2 2 0 01-2 2 2 2 0 01-2-2v0a2 2 0 012-2zm0 0V7m0 0a3 3 0 00-3-3 2.5 2.5 0 00-2.5 2.5M12 7a3 3 0 013-3 2.5 2.5 0 012.5 2.5" />
+                      </svg>
+                    )}
+                    {link.label}
+                  </Link>
+                );
+              })}
               <Link
                 href="/settings/api"
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${

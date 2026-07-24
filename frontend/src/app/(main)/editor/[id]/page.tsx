@@ -7,6 +7,7 @@ import WorldEditor from '@/components/editor/WorldEditor';
 import NpcPanel from '@/components/editor/NpcPanel';
 import AttributePanel from '@/components/editor/AttributePanel';
 import NodeEditor from '@/components/editor/NodeEditor';
+import AiImageGenerator from '@/components/editor/AiImageGenerator';
 import api from '@/lib/api';
 import { ScriptNpc, ScriptAttribute, ScriptNode } from '@/types';
 
@@ -138,7 +139,17 @@ function ExistingEditor({ scriptId }: { scriptId: number }) {
       {/* Tab Content */}
       <div className="bg-white rounded-xl shadow-sm border border-[var(--rule)] p-6 min-h-[60vh]">
         {activeTab === 'world' && (
-          <WorldEditor scriptId={scriptId} initialValue={scriptData.worldSetting || ''} />
+          <div className="space-y-6">
+            <CoverSection
+              scriptId={scriptId}
+              title={scriptData.title}
+              desc={scriptData.desc || ''}
+              category={scriptData.category || 'adventure'}
+              cover={scriptData.cover || null}
+              onSaved={refetchScript}
+            />
+            <WorldEditor scriptId={scriptId} initialValue={scriptData.worldSetting || ''} />
+          </div>
         )}
         {activeTab === 'npcs' && (
           <NpcPanel scriptId={scriptId} npcs={npcsData || []} onRefresh={refetchNpcs} />
@@ -150,6 +161,85 @@ function ExistingEditor({ scriptId }: { scriptId: number }) {
           <NodeEditor scriptId={scriptId} nodes={nodesData || []} onRefresh={refetchNodes} />
         )}
       </div>
+    </div>
+  );
+}
+
+/* ===== 剧本封面区块（含 AI 生成） ===== */
+
+interface CoverSectionProps {
+  scriptId: number;
+  title: string;
+  desc: string;
+  category: string;
+  cover: string | null;
+  onSaved: () => void;
+}
+
+function CoverSection({ scriptId, title, desc, category, cover, onSaved }: CoverSectionProps) {
+  const [showGen, setShowGen] = useState(false);
+
+  const handleApply = async (url: string) => {
+    try {
+      await api.put(`/scripts/${scriptId}`, { cover: url });
+      setShowGen(false);
+      onSaved();
+    } catch {
+      // 保存失败
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-[var(--ink)]">剧本封面</h3>
+        {!showGen && (
+          <button
+            onClick={() => setShowGen(true)}
+            className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.456-2.456L14.25 6l1.035-.259a3.375 3.375 0 002.456-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+            </svg>
+            AI 生成封面
+          </button>
+        )}
+      </div>
+
+      {/* 当前封面预览 */}
+      {cover && !showGen && (
+        <div className="flex justify-center p-3 rounded-lg bg-[var(--bg3)] border border-[var(--rule)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cover}
+            alt="剧本封面"
+            className="w-full max-w-sm aspect-[2/1] object-cover rounded-lg border border-[var(--rule)] shadow-sm"
+          />
+        </div>
+      )}
+
+      {!cover && !showGen && (
+        <div className="flex justify-center items-center w-full max-w-sm aspect-[2/1] mx-auto rounded-lg bg-[var(--bg3)] border border-dashed border-[var(--rule)] text-[var(--muted)] text-sm">
+          暂无封面
+        </div>
+      )}
+
+      {/* AI 生成封面 */}
+      {showGen && (
+        <div className="p-4 rounded-lg border border-violet-200 bg-violet-50">
+          <AiImageGenerator
+            type="cover"
+            inputData={{ title, desc, category }}
+            onGenerated={handleApply}
+          />
+          <button
+            onClick={() => setShowGen(false)}
+            className="mt-2 text-xs text-[var(--muted)] hover:text-violet-600"
+          >
+            收起
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   CreateNodeDto,
   UpdateNodeDto,
 } from './dto/scripts.dto';
+import { GenerateCoverDto } from '../ai-image/dto/ai-image.dto';
 import { CombinedAuthGuard } from '../auth/auth.guard';
 
 @ApiTags('剧本')
@@ -174,5 +175,17 @@ export class ScriptsController {
   @ApiOperation({ summary: 'AI生成初始内容' })
   async generateInitialContent(@Param('id') id: string) {
     return this.scriptsService.generateInitialContent(Number(id));
+  }
+
+  @Post(':id/generate-cover')
+  @UseGuards(CombinedAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'AI生成剧本封面并保存' })
+  async generateCover(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() dto: GenerateCoverDto,
+  ) {
+    return this.scriptsService.generateCover(Number(id), req.user.id, dto);
   }
 }

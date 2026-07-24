@@ -12,6 +12,9 @@ import { CommunityModule } from './community/community.module';
 import { CoinModule } from './coin/coin.module';
 import { AdminModule } from './admin/admin.module';
 import { SearchModule } from './search/search.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { AiImageModule } from './ai-image/ai-image.module';
+import { InviteModule } from './invite/invite.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { SearchModule } from './search/search.module';
     CoinModule,
     AdminModule,
     SearchModule,
+    AnalyticsModule,
+    AiImageModule,
+    InviteModule,
   ],
   controllers: [AppController],
   providers: [AppService],
