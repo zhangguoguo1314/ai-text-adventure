@@ -108,6 +108,14 @@ export default function ScriptEditor() {
             onGenerate={editor.generate}
             onEnterEditor={editor.enterEditor}
             onBack={editor.resetToStep}
+            generateItems={editor.generateItems}
+            toggleGenerateItem={editor.toggleGenerateItem}
+            engineType={editor.engineType}
+            setEngineType={editor.setEngineType}
+            title={editor.title}
+            instruction={editor.instruction}
+            selectedStyleName={editor.selectedStyleName}
+            aiPolish={editor.aiPolish}
           />
         )}
       </div>

@@ -85,6 +85,15 @@ model Script {
   rejectionReason String? @map("rejection_reason")
   createdAt      DateTime @default(now()) @map("created_at")
 
+  // 剧本自产系统扩展字段
+  narrativeRules String?  @default("") @map("narrative_rules") // AI润色后的叙事规则（贯穿游玩全程）
+  charConfig     String?  @default("{}") @map("char_config") // 角色创建配置JSON（家世/性格/特质等选项）
+  tags           String?  @default("[]") @map("tags") // 剧本标签JSON
+  themeColor     String?  @default("") @map("theme_color") // 主题配色
+  engineType     String?  @default("standard") @map("engine_type") // 生成引擎类型
+  openingText    String?  @default("") @map("opening_text") // 开场白文本（独立于节点）
+  isAiGenerated  Boolean  @default(false) @map("is_ai_generated") // 是否AI生成
+
   author      User          @relation(fields: [authorId], references: [id])
   npcs        ScriptNpc[]
   attributes  ScriptAttribute[]

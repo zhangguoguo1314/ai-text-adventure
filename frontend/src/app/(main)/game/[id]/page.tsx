@@ -48,12 +48,19 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
 
     if (!script) return;
 
-    // 检查是否有角色创建配置
-    const charConfig = template?.charConfig;
-    if (charConfig && typeof charConfig === 'object') {
+    // 检查是否有角色创建配置（优先从剧本本身读取，其次从模板读取）
+    const charConfigSource = script.charConfig || template?.charConfig;
+    if (charConfigSource) {
       try {
-        const parsed = typeof charConfig === 'string' ? JSON.parse(charConfig) : charConfig;
-        if (parsed && Object.keys(parsed).length > 0) {
+        const parsed = typeof charConfigSource === 'string' ? JSON.parse(charConfigSource) : charConfigSource;
+        // 过滤掉内部字段（如 _storyArcs, _endings）
+        const cleanConfig: Record<string, string[]> = {};
+        for (const [key, val] of Object.entries(parsed)) {
+          if (!key.startsWith('_') && Array.isArray(val)) {
+            cleanConfig[key] = val as string[];
+          }
+        }
+        if (Object.keys(cleanConfig).length > 0) {
           setShowCharCreation(true);
           return;
         }
@@ -182,9 +189,21 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* 角色创建弹窗 */}
-      {showCharCreation && template?.charConfig && (
+      {showCharCreation && (script?.charConfig || template?.charConfig) && (
         <CharacterCreation
-          charConfig={typeof template.charConfig === 'string' ? JSON.parse(template.charConfig) : template.charConfig}
+          charConfig={(() => {
+            const raw = script?.charConfig || template?.charConfig;
+            if (!raw) return {};
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            // 过滤内部字段
+            const clean: Record<string, string[]> = {};
+            for (const [key, val] of Object.entries(parsed)) {
+              if (!key.startsWith('_') && Array.isArray(val)) {
+                clean[key] = val as string[];
+              }
+            }
+            return clean;
+          })()}
           scriptTitle={script?.title}
           onComplete={(config) => {
             setShowCharCreation(false);

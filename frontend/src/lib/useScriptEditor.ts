@@ -18,11 +18,19 @@ export function useScriptEditor(scriptId: string) {
   const [createdScriptId, setCreatedScriptId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 生成项选择（对标UU的确认生成步）
+  const [generateItems, setGenerateItems] = useState<string[]>([
+    'description', 'narrativeRules', 'attributes', 'npcs', 'opening', 'charConfig', 'tags'
+  ]);
+  // 生成引擎选择
+  const [engineType, setEngineType] = useState<string>('standard');
+
   const canNext = useCallback(() => {
     if (step === 1) return selectedStyle !== null;
     if (step === 2) return title.trim().length > 0 && instruction.trim().length > 0;
+    if (step === 3) return generateItems.length > 0; // 至少保留1项
     return false;
-  }, [step, selectedStyle, title, instruction]);
+  }, [step, selectedStyle, title, instruction, generateItems]);
 
   const goNext = useCallback(() => {
     if (step < 3) {
@@ -49,7 +57,7 @@ export function useScriptEditor(scriptId: string) {
     setGenerating(true);
 
     try {
-      // Step 1: Create the script
+      // Step 1: 创建剧本
       const createRes: any = await api.post('/scripts', {
         title: title.trim(),
         desc: instruction.trim(),
@@ -63,8 +71,12 @@ export function useScriptEditor(scriptId: string) {
       const newScriptId = createRes.data.id;
       setCreatedScriptId(newScriptId);
 
-      // Step 2: Trigger AI generation
-      const genRes: any = await api.post(`/scripts/${newScriptId}/generate`);
+      // Step 2: 触发AI生成（传入aiPolish、生成项和引擎类型）
+      const genRes: any = await api.post(`/scripts/${newScriptId}/generate`, {
+        aiPolish,
+        generateItems,
+        engineType,
+      });
 
       if (!genRes.success) {
         throw new Error(genRes.message || '生成内容失败');
@@ -77,13 +89,25 @@ export function useScriptEditor(scriptId: string) {
     } finally {
       setGenerating(false);
     }
-  }, [title, instruction, selectedStyle]);
+  }, [title, instruction, selectedStyle, aiPolish, generateItems, engineType]);
 
   const enterEditor = useCallback(() => {
     if (createdScriptId) {
       router.push(`/editor/${createdScriptId}`);
     }
   }, [createdScriptId, router]);
+
+  // 切换生成项
+  const toggleGenerateItem = useCallback((item: string) => {
+    setGenerateItems(prev => {
+      if (prev.includes(item)) {
+        // 至少保留1项
+        if (prev.length <= 1) return prev;
+        return prev.filter(i => i !== item);
+      }
+      return [...prev, item];
+    });
+  }, []);
 
   return {
     step,
@@ -111,5 +135,11 @@ export function useScriptEditor(scriptId: string) {
     resetToStep,
     generate,
     enterEditor,
+    // 新增：生成项和引擎
+    generateItems,
+    setGenerateItems,
+    toggleGenerateItem,
+    engineType,
+    setEngineType,
   };
 }

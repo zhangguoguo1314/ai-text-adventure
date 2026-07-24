@@ -306,7 +306,15 @@ export class ScriptsService {
 
   /* ===== AI Generation ===== */
 
-  async generateInitialContent(scriptId: number) {
+  /**
+   * 增强版AI剧本生成引擎
+   * 对标UU站点：文风选择 + 游戏指令 + AI润色 + 多项生成
+   */
+  async generateInitialContent(scriptId: number, options?: {
+    aiPolish?: boolean;
+    generateItems?: string[]; // 要生成的项: description, narrativeRules, themeColor, attributes, npcs, opening, charConfig, tags
+    engineType?: string; // 生成引擎
+  }) {
     const script = await this.prisma.script.findUnique({
       where: { id: scriptId },
       include: { npcs: true, attributes: true },
@@ -320,43 +328,22 @@ export class ScriptsService {
       return this.generateMockContent(script);
     }
 
-    // Get style template if associated
+    // 获取文风模板
     const styleTemplate = script.styleId
       ? await this.prisma.styleTemplate.findUnique({
           where: { id: script.styleId },
         })
       : null;
 
-    const systemPrompt = `你是一个专业的AI文字冒险游戏剧本创作助手。你需要根据用户提供的信息，生成一个完整的游戏剧本初始内容。
+    // 默认生成项
+    const genItems = options?.generateItems || [
+      'description', 'narrativeRules', 'attributes', 'npcs', 'opening', 'charConfig', 'tags'
+    ];
+    const aiPolish = options?.aiPolish ?? true;
 
-请以JSON格式返回以下内容：
-{
-  "worldSetting": "世界观的详细描述（包含核心规则、背景设定等）",
-  "npcs": [
-    { "name": "角色名", "personality": "角色性格描述", "avatar": "角色头像描述" }
-  ],
-  "attributes": [
-    { "name": "属性名", "type": "number|enum|boolean", "minVal": 0, "maxVal": 100, "defaultVal": "50" }
-  ],
-  "openingScene": {
-    "content": "开局场景描述文本",
-    "choices": [
-      { "text": "选项文本", "nextNodeId": null }
-    ]
-  }
-}
-
-注意：
-- 世界观描述要详细、有吸引力
-- NPC要有鲜明的个性
-- 属性设计要合理，至少包含3-5个属性
-- 开局场景要引人入胜
-- 只返回JSON，不要其他文本`;
-
-    const userPrompt = `请为我创作一个文字冒险游戏剧本：
-标题：${script.title}
-${script.desc ? `描述：${script.desc}` : ''}
-${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有趣的叙事风格。'}`;
+    // 构建增强版系统提示
+    const systemPrompt = this.buildGenerationSystemPrompt(genItems, styleTemplate);
+    const userPrompt = this.buildGenerationUserPrompt(script, styleTemplate, aiPolish);
 
     try {
       const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
@@ -372,8 +359,8 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          temperature: 0.8,
-          max_tokens: 4000,
+          temperature: 0.85,
+          max_tokens: 6000,
         }),
       });
 
@@ -388,7 +375,7 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
         throw new Error('No content in LLM response');
       }
 
-      // Extract JSON from the response
+      // 提取JSON
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No JSON found in LLM response');
@@ -396,13 +383,96 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
 
       const generated = JSON.parse(jsonMatch[0]);
 
-      // Save generated content to database
-      return this.saveGeneratedContent(scriptId, generated);
+      // 标记为AI生成
+      await this.prisma.script.update({
+        where: { id: scriptId },
+        data: {
+          isAiGenerated: true,
+          engineType: options?.engineType || 'standard',
+        },
+      });
+
+      // 保存生成内容
+      return this.saveGeneratedContent(scriptId, generated, aiPolish);
     } catch (error) {
-      // Fall back to mock content if LLM fails
       console.error('LLM generation failed, using mock data:', error.message);
       return this.generateMockContent(script);
     }
+  }
+
+  /**
+   * 构建生成系统提示 - 对标UU的生成项选择
+   */
+  private buildGenerationSystemPrompt(genItems: string[], styleTemplate: any): string {
+    const styleDesc = styleTemplate
+      ? `当前文风：${styleTemplate.name}（${styleTemplate.preview}）。\n文风要求：${styleTemplate.prompt}`
+      : '请使用生动有趣的叙事风格。';
+
+    let prompt = `你是一个专业的AI文字冒险游戏剧本创作引擎。你需要根据用户的游戏指令，生成一个完整、可游玩的文字冒险剧本。
+
+${styleDesc}
+
+请以JSON格式返回以下内容（根据生成项决定包含哪些字段）：
+{
+  "worldSetting": "世界观详细描述（核心规则、背景设定、社会结构等，500-1000字）",
+  "narrativeRules": "叙事规则（AI游玩时需遵循的叙事规范、文风约束、特殊机制说明，200-500字。若用户指令足够详细，提炼核心规则；若指令较短，补充创作）",
+  "description": "游戏详情页简介（100-200字，有吸引力的描述）+ 2-5个分类标签",
+  "tags": ["标签1", "标签2", "标签3"],
+  "category": "adventure|romance|mystery|scifi|horror|fantasy|wuxia|cultivation|idol|school|other",
+  "themeColor": "violet|rose|amber|cyan|emerald|slate（主题配色方案）",
+  "npcs": [
+    { "name": "角色名", "personality": "详细性格描述（100-200字，含外貌、性格、背景、与玩家关系倾向）", "avatar": "emoji表情" }
+  ],
+  "attributes": [
+    { "name": "属性名", "type": "number", "minVal": 0, "maxVal": 100, "defaultVal": "50" }
+  ],
+  "charConfig": {
+    "字段名(如origins)": ["选项1", "选项2", "选项3"],
+    "字段名(如personalities)": ["选项1", "选项2", "选项3"]
+  },
+  "openingText": "开场白文本（200-400字，带入第一幕，直接呈现给玩家的第一个场景）",
+  "openingScene": {
+    "content": "开局场景描述",
+    "choices": [
+      { "text": "选项文本", "nextNodeId": null, "effects": {"attribute": "+10"} }
+    ]
+  },
+  "storyArcs": [
+    { "chapter": 1, "title": "章节标题", "summary": "本章核心冲突概述", "keyEvents": ["关键事件1", "关键事件2"] }
+  ],
+  "endings": [
+    { "type": "good", "title": "结局名", "condition": "触发条件描述" }
+  ]
+}
+
+注意：
+- NPC要从用户指令中已写明的角色建档，不凭空编造
+- 角色创建配置(charConfig)要根据世界观设计合理的开局选择项（家世/性格/天赋/路线等）
+- 属性设计要符合世界观（修仙类要有灵力/修为，校园类要有好感度/勇气等）
+- 开场白要引人入胜，直接进入第一幕
+- storyArcs描述3-5个章节的核心剧情走向
+- endings设计2-4个不同结局的触发条件
+- 只返回JSON，不要其他文本`;
+
+    return prompt;
+  }
+
+  /**
+   * 构建生成用户提示
+   */
+  private buildGenerationUserPrompt(script: any, styleTemplate: any, aiPolish: boolean): string {
+    let prompt = `请为我创作一个文字冒险游戏剧本：
+
+标题：${script.title}
+${script.desc ? `游戏指令：${script.desc}` : '（无具体指令，请自由创作一个有趣的冒险剧本）'}`;
+
+    if (!aiPolish) {
+      prompt += `\n\n注意：用户未开启AI润色，请将用户指令原样作为叙事规则的核心，不要大幅改写用户描述。`;
+    } else {
+      prompt += `\n\n注意：用户已开启AI润色，请在用户指令基础上整理、扩展和完善叙事规则。`;
+    }
+
+    return prompt;
   }
 
   /**
@@ -436,10 +506,68 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
     return { success: true, url: result.url, data: updated };
   }
 
+  /**
+   * 更新剧本角色创建配置
+   */
+  async updateCharConfig(scriptId: number, userId: number, charConfig: Record<string, string[]>) {
+    const script = await this.prisma.script.findUnique({ where: { id: scriptId } });
+    if (!script) throw new NotFoundException('剧本不存在');
+    if (script.authorId !== userId) return { success: false, message: '无权编辑此剧本' };
+
+    await this.prisma.script.update({
+      where: { id: scriptId },
+      data: { charConfig: JSON.stringify(charConfig) },
+    });
+    return { success: true, charConfig };
+  }
+
+  /**
+   * 更新剧本叙事规则
+   */
+  async updateNarrativeRules(scriptId: number, userId: number, narrativeRules: string) {
+    const script = await this.prisma.script.findUnique({ where: { id: scriptId } });
+    if (!script) throw new NotFoundException('剧本不存在');
+    if (script.authorId !== userId) return { success: false, message: '无权编辑此剧本' };
+
+    await this.prisma.script.update({
+      where: { id: scriptId },
+      data: { narrativeRules },
+    });
+    return { success: true, narrativeRules };
+  }
+
+  /**
+   * 更新剧本故事线结构（章节走向 + 结局条件）
+   * 存储在 charConfig JSON 中作为 _storyArcs 和 _endings
+   */
+  async updateStoryStructure(scriptId: number, userId: number, storyArcs?: any[], endings?: any[]) {
+    const script = await this.prisma.script.findUnique({ where: { id: scriptId } });
+    if (!script) throw new NotFoundException('剧本不存在');
+    if (script.authorId !== userId) return { success: false, message: '无权编辑此剧本' };
+
+    // 将故事线和结局存储在 charConfig JSON 的特殊字段中
+    let existingConfig: any = {};
+    try { existingConfig = JSON.parse(script.charConfig || '{}'); } catch { existingConfig = {}; }
+
+    if (storyArcs) existingConfig._storyArcs = storyArcs;
+    if (endings) existingConfig._endings = endings;
+
+    await this.prisma.script.update({
+      where: { id: scriptId },
+      data: { charConfig: JSON.stringify(existingConfig) },
+    });
+    return { success: true, storyArcs, endings };
+  }
+
   private async saveGeneratedContent(
     scriptId: number,
     content: {
       worldSetting?: string;
+      narrativeRules?: string;
+      description?: string;
+      tags?: string[];
+      category?: string;
+      themeColor?: string;
       npcs?: Array<{ name: string; personality?: string; avatar?: string }>;
       attributes?: Array<{
         name: string;
@@ -448,21 +576,36 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
         maxVal?: number;
         defaultVal?: string;
       }>;
+      charConfig?: Record<string, string[]>;
+      openingText?: string;
       openingScene?: {
         content?: string;
-        choices?: Array<{ text: string; nextNodeId?: number | null }>;
+        choices?: Array<{ text: string; nextNodeId?: number | null; effects?: Record<string, string> }>;
       };
+      storyArcs?: Array<{ chapter: number; title: string; summary: string; keyEvents: string[] }>;
+      endings?: Array<{ type: string; title: string; condition: string }>;
     },
+    aiPolish?: boolean,
   ) {
-    // Update world setting
-    if (content.worldSetting) {
+    // 更新剧本核心字段（世界观、叙事规则、描述、标签、分类、配色、开场白、角色配置）
+    const updateData: any = {};
+    if (content.worldSetting) updateData.worldSetting = content.worldSetting;
+    if (content.narrativeRules) updateData.narrativeRules = content.narrativeRules;
+    if (content.description) updateData.desc = content.description;
+    if (content.tags && Array.isArray(content.tags)) updateData.tags = JSON.stringify(content.tags);
+    if (content.category) updateData.category = content.category;
+    if (content.themeColor) updateData.themeColor = content.themeColor;
+    if (content.openingText) updateData.openingText = content.openingText;
+    if (content.charConfig) updateData.charConfig = JSON.stringify(content.charConfig);
+
+    if (Object.keys(updateData).length > 0) {
       await this.prisma.script.update({
         where: { id: scriptId },
-        data: { worldSetting: content.worldSetting },
+        data: updateData,
       });
     }
 
-    // Create NPCs
+    // 创建NPC
     if (content.npcs && content.npcs.length > 0) {
       await this.prisma.scriptNpc.deleteMany({ where: { scriptId } });
       await Promise.all(
@@ -480,7 +623,7 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
       );
     }
 
-    // Create attributes
+    // 创建属性
     if (content.attributes && content.attributes.length > 0) {
       await this.prisma.scriptAttribute.deleteMany({ where: { scriptId } });
       await Promise.all(
@@ -499,7 +642,7 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
       );
     }
 
-    // Create opening scene node
+    // 创建开局场景节点
     if (content.openingScene) {
       await this.prisma.scriptNode.deleteMany({ where: { scriptId } });
       const choicesStr = content.openingScene.choices
@@ -510,26 +653,35 @@ ${styleTemplate ? `文风要求：${styleTemplate.prompt}` : '请使用生动有
         data: {
           scriptId,
           type: 'scene',
-          content: content.openingScene.content || '',
+          content: content.openingScene.content || content.openingText || '',
           choices: choicesStr,
           posX: 100,
           posY: 100,
         },
       });
 
-      // Return the full generated content with the node ID
+      // 返回完整生成内容
       const script = await this.findOne(scriptId);
       return {
         success: true,
         data: {
           ...script.data,
           openingNodeId: openingNode.id,
+          storyArcs: content.storyArcs || [],
+          endings: content.endings || [],
         },
       };
     }
 
     const script = await this.findOne(scriptId);
-    return { success: true, data: script.data };
+    return {
+      success: true,
+      data: {
+        ...script.data,
+        storyArcs: content.storyArcs || [],
+        endings: content.endings || [],
+      },
+    };
   }
 
   private generateMockContent(script: any) {

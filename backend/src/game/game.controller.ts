@@ -89,6 +89,12 @@ export class GameController {
           name: npc.name,
           personality: npc.personality,
         })),
+        // 传入叙事规则和文风提示（贯穿游玩全程）
+        {
+          narrativeRules: script.narrativeRules || '',
+          openingText: script.openingText || '',
+          styleId: script.styleId,
+        },
       );
 
       // 将 GameMessage[] 转换为 AI 消息格式

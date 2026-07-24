@@ -124,7 +124,7 @@ export class TemplatesService {
     const title = `${template.name} - 我的剧本`;
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. 创建 Script
+      // 1. 创建 Script（含 charConfig、narrativeRules、tags 等扩展字段）
       const script = await tx.script.create({
         data: {
           authorId: userId,
@@ -133,6 +133,12 @@ export class TemplatesService {
           category: template.category || 'adventure',
           worldSetting: template.worldSetting || '',
           status: 'draft',
+          // 传递模板的 charConfig 到剧本（对标UU角色创建配置）
+          charConfig: template.charConfig || '{}',
+          // stylePrompt 作为叙事规则
+          narrativeRules: template.stylePrompt || '',
+          // 传递模板标签
+          tags: template.tags || '[]',
         },
       });
 

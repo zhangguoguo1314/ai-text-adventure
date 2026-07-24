@@ -363,17 +363,28 @@ export class GameService {
 
   /**
    * 构建增强版系统 Prompt
+   * 支持叙事规则、文风贯穿、开场白注入
    */
   buildPrompt(
     worldSetting: string,
     gameState: GameState,
     npcList: { name: string; personality: string }[],
+    options?: {
+      narrativeRules?: string;
+      openingText?: string;
+      styleId?: number | null;
+    },
   ): string {
     let systemPrompt = '你是一个文字冒险游戏的叙述者。请根据玩家的行动，描述接下来发生的事情。\n\n';
 
     // 世界观规则
     if (worldSetting) {
       systemPrompt += `【世界观规则】\n${worldSetting}\n\n`;
+    }
+
+    // 叙事规则（AI生成时产出的文风约束、特殊机制等，贯穿游玩全程）
+    if (options?.narrativeRules) {
+      systemPrompt += `【叙事规则】\n${options.narrativeRules}\n\n`;
     }
 
     // 角色创建配置（对标UU的家世/性格/特质等开局选择）

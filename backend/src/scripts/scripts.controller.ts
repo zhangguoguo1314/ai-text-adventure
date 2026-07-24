@@ -172,9 +172,16 @@ export class ScriptsController {
   @Post(':id/generate')
   @UseGuards(CombinedAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'AI生成初始内容' })
-  async generateInitialContent(@Param('id') id: string) {
-    return this.scriptsService.generateInitialContent(Number(id));
+  @ApiOperation({ summary: 'AI生成初始内容（增强版：支持文风/润色/多项选择）' })
+  async generateInitialContent(
+    @Param('id') id: string,
+    @Body() body: { aiPolish?: boolean; generateItems?: string[]; engineType?: string },
+  ) {
+    return this.scriptsService.generateInitialContent(Number(id), {
+      aiPolish: body?.aiPolish,
+      generateItems: body?.generateItems,
+      engineType: body?.engineType,
+    });
   }
 
   @Post(':id/generate-cover')
@@ -187,5 +194,41 @@ export class ScriptsController {
     @Body() dto: GenerateCoverDto,
   ) {
     return this.scriptsService.generateCover(Number(id), req.user.id, dto);
+  }
+
+  @Put(':id/char-config')
+  @UseGuards(CombinedAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新剧本角色创建配置' })
+  async updateCharConfig(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { charConfig: Record<string, string[]> },
+  ) {
+    return this.scriptsService.updateCharConfig(Number(id), req.user.id, body.charConfig);
+  }
+
+  @Put(':id/narrative-rules')
+  @UseGuards(CombinedAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新剧本叙事规则' })
+  async updateNarrativeRules(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { narrativeRules: string },
+  ) {
+    return this.scriptsService.updateNarrativeRules(Number(id), req.user.id, body.narrativeRules);
+  }
+
+  @Put(':id/story-structure')
+  @UseGuards(CombinedAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新剧本故事线结构（章节/结局）' })
+  async updateStoryStructure(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { storyArcs?: any[]; endings?: any[] },
+  ) {
+    return this.scriptsService.updateStoryStructure(Number(id), req.user.id, body.storyArcs, body.endings);
   }
 }

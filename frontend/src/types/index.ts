@@ -79,12 +79,22 @@ export interface NodeChoice {
 /* ===== AI 生成结果 ===== */
 export interface GeneratedContent {
   worldSetting: string;
+  narrativeRules?: string;
+  description?: string;
+  tags?: string[];
+  category?: string;
+  themeColor?: string;
   npcs: Array<{ id?: number; name: string; personality: string; avatar: string | null; sortOrder?: number }>;
   attributes: Array<{ id?: number; name: string; type: string; minVal: number | null; maxVal: number | null; defaultVal: string | null }>;
+  charConfig?: Record<string, string[]>;
+  openingText?: string;
   openingScene: {
     content: string;
     choices: NodeChoice[];
   };
+  storyArcs?: Array<{ chapter: number; title: string; summary: string; keyEvents: string[] }>;
+  endings?: Array<{ type: string; title: string; condition: string }>;
+  openingNodeId?: number;
 }
 
 /* ===== 游戏会话 ===== */
@@ -156,6 +166,8 @@ export interface ScriptTemplate {
   npcTemplate: TemplateNpc[];
   attrTemplate: TemplateAttr[];
   nodeTemplate: TemplateNode[];
+  charConfig?: Record<string, string[]>;
+  tags?: string[];
   useCount: number;
   rating: number;
   ratingCount: number;
