@@ -1,0 +1,141 @@
+# ============================================
+# CI 持续集成工作流
+#
+# 触发条件：推送到 main 分支 / 针对 main 的 Pull Request
+#
+# Jobs:
+#   1. backend-test    — 后端单元测试 + 类型检查
+#   2. frontend-test   — 前端 Vitest 测试 + 类型检查
+#   3. frontend-build  — 前端构建（依赖 frontend-test 通过）
+# ============================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一分支的新推送取消旧的运行
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================
+  # 后端测试
+  # ============================================
+  backend-test:
+    name: 后端测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: 安装后端依赖
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: 生成 Prisma Client
+        working-directory: backend
+        run: pnpm prisma:generate
+
+      - name: TypeScript 类型检查
+        working-directory: backend
+        run: npx tsc --noEmit
+
+      - name: 运行单元测试
+        working-directory: backend
+        run: pnpm test
+
+  # ============================================
+  # 前端测试
+  # ============================================
+  frontend-test:
+    name: 前端测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript 类型检查
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: 运行前端测试
+        working-directory: frontend
+        run: pnpm test
+
+  # ============================================
+  # 前端构建（依赖前端测试通过）
+  # ============================================
+  frontend-build:
+    name: 前端构建
+    needs: frontend-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建前端
+        working-directory: frontend
+        run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: |
+            frontend/.next/standalone
+            frontend/.next/static
+            frontend/public
+          retention-days: 7

@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Script } from '@/types';
 import { formatNumber, truncateText } from '@/lib/utils';
 
@@ -8,6 +11,8 @@ interface ScriptCardProps {
 }
 
 export default function ScriptCard({ script, rank }: ScriptCardProps) {
+  const t = useTranslations('home');
+
   return (
     <Link href={`/game/${script.id}`} className="block">
       <div className="flex gap-4 p-4 bg-[var(--bg2)] rounded-xl hover:shadow-md transition-shadow group card-shadow">
@@ -39,7 +44,7 @@ export default function ScriptCard({ script, rank }: ScriptCardProps) {
             {truncateText(script.description)}
           </p>
           <div className="flex items-center gap-4 mt-2 text-xs text-[var(--muted)]">
-            <span>{formatNumber(script.playCount)} 次游玩</span>
+            <span>{t('playCount', { count: formatNumber(script.playCount) })}</span>
             <span className="px-2 py-0.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
               {script.genre}
             </span>

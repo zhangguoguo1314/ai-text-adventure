@@ -1,37 +1,31 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface BannerItem {
   id: number;
-  title: string;
-  description: string;
   bgColor: string;
 }
 
 const mockBanners: BannerItem[] = [
   {
     id: 1,
-    title: 'AI 文字冒险 -- 无限想象',
-    description: '用 AI 创造属于你的互动文字冒险游戏',
     bgColor: 'from-violet-600 to-purple-700',
   },
   {
     id: 2,
-    title: '全新模板库上线',
-    description: '数百种预设模板，一键开始你的创作之旅',
     bgColor: 'from-fuchsia-600 to-pink-700',
   },
   {
     id: 3,
-    title: '创作者大赛火热进行中',
-    description: '参与创作赢取丰厚奖励',
     bgColor: 'from-indigo-600 to-blue-700',
   },
 ];
 
 export default function Banner() {
   const [current, setCurrent] = useState(0);
+  const t = useTranslations('home.banner');
 
   const goNext = useCallback(() => {
     setCurrent((prev) => (prev + 1) % mockBanners.length);
@@ -43,6 +37,8 @@ export default function Banner() {
   }, [goNext]);
 
   const banner = mockBanners[current];
+  const titleKey = `title${banner.id}` as const;
+  const descKey = `desc${banner.id}` as const;
 
   return (
     <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden card-shadow">
@@ -50,8 +46,8 @@ export default function Banner() {
         className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor} transition-all duration-500`}
       />
       <div className="relative z-10 flex flex-col justify-center h-full px-8 md:px-12 text-white">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2">{banner.title}</h2>
-        <p className="text-sm md:text-base text-white/80 max-w-lg">{banner.description}</p>
+        <h2 className="text-2xl md:text-3xl font-bold mb-2">{t(titleKey)}</h2>
+        <p className="text-sm md:text-base text-white/80 max-w-lg">{t(descKey)}</p>
       </div>
 
       {/* 指示器 */}

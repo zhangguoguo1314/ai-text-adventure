@@ -1,12 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 const tabs = [
-  { key: 'category', label: '分类' },
-  { key: 'new', label: '新作榜' },
-  { key: 'daily', label: '日榜' },
-  { key: 'weekly', label: '周榜' },
-  { key: 'monthly', label: '月榜' },
-  { key: 'author', label: '作者榜' },
+  { key: 'category' },
+  { key: 'new' },
+  { key: 'daily' },
+  { key: 'weekly' },
+  { key: 'monthly' },
+  { key: 'author' },
 ];
 
 interface RankTabsProps {
@@ -15,6 +17,8 @@ interface RankTabsProps {
 }
 
 export default function RankTabs({ activeTab, onTabChange }: RankTabsProps) {
+  const t = useTranslations('home.rankTabs');
+
   return (
     <div className="flex gap-1 overflow-x-auto pb-2">
       {tabs.map((tab) => (
@@ -27,7 +31,7 @@ export default function RankTabs({ activeTab, onTabChange }: RankTabsProps) {
               : 'bg-[var(--bg2)] text-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]'
           }`}
         >
-          {tab.label}
+          {t(tab.key)}
         </button>
       ))}
     </div>

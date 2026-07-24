@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import SearchModal from '@/components/search/SearchModal';
 
 export default function SearchBar() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [pendingKeyword, setPendingKeyword] = useState('');
+  const t = useTranslations('home');
 
   const handleOpenSearch = () => {
     setSearchModalOpen(true);
@@ -28,7 +30,7 @@ export default function SearchBar() {
       >
         <div className="relative flex items-center h-11 pl-4 pr-12 rounded-full bg-white border border-[var(--rule)] text-left transition-shadow hover:shadow-md group">
           <span className="text-[var(--muted)] text-sm flex-1">
-            搜索剧本、关键词...
+            {t('searchPlaceholder')}
           </span>
           <div className="flex items-center gap-2">
             {/* 快捷键提示 */

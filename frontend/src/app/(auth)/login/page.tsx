@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 
 export default function LoginPage() {
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
   const router = useRouter();
+  const t = useTranslations('auth');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +29,9 @@ export default function LoginPage() {
         await login(email, password);
       }
       router.push('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || '登录失败，请重试');
+    } catch (err) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setError(axiosErr.response?.data?.message || t('loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -37,7 +40,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-center text-[var(--ink)] mb-6">登录</h1>
+        <h1 className="text-2xl font-bold text-center text-[var(--ink)] mb-6">{t('login')}</h1>
 
         {/* Tab 切换 */}
         <div className="flex gap-2 mb-6">
@@ -49,7 +52,7 @@ export default function LoginPage() {
                 : 'bg-violet-50 text-violet-600 hover:bg-violet-100'
             }`}
           >
-            手机号登录
+            {t('phoneLogin')}
           </button>
           <button
             onClick={() => setLoginType('email')}
@@ -59,7 +62,7 @@ export default function LoginPage() {
                 : 'bg-violet-50 text-violet-600 hover:bg-violet-100'
             }`}
           >
-            邮箱登录
+            {t('emailLogin')}
           </button>
         </div>
 
@@ -68,7 +71,7 @@ export default function LoginPage() {
           {loginType === 'phone' ? (
             <input
               type="tel"
-              placeholder="手机号"
+              placeholder={t('phone')}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
@@ -77,7 +80,7 @@ export default function LoginPage() {
           ) : (
             <input
               type="email"
-              placeholder="邮箱地址"
+              placeholder={t('email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -87,7 +90,7 @@ export default function LoginPage() {
 
           <input
             type="password"
-            placeholder="密码"
+            placeholder={t('password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -103,14 +106,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full h-11 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium transition-colors disabled:opacity-50"
           >
-            {loading ? '登录中...' : '登录'}
+            {loading ? t('loggingIn') : t('login')}
           </button>
         </form>
 
         <p className="text-center text-sm text-[var(--muted)] mt-6">
-          还没有账号？{' '}
+          {t('noAccount')}{' '}
           <a href="/register" className="text-violet-600 hover:text-violet-700 font-medium">
-            立即注册
+            {t('registerNow')}
           </a>
         </p>
       </div>

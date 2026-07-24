@@ -1,0 +1,29 @@
+# .htaccess - URL 重写规则
+# 将所有非文件请求重写到 index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 处理预检请求
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ index.php [QSA,L]
+
+    # 如果请求的是真实文件或目录，直接访问
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 其他所有请求重写到 index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# 错误页面重定向到 index.php
+ErrorDocument 404 /index.php
+
+# 安全设置：禁止访问敏感文件
+<FilesMatch "\.(sql|md|json)$">
+    Require all denied
+</FilesMatch>
+
+# 字符编码
+AddDefaultCharset utf-8

@@ -2,34 +2,36 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { useState } from 'react';
 import ModelExchangeModal from '@/components/settings/ModelExchangeModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import NotificationBell from '@/components/common/NotificationBell';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 
-const navLinks: Array<{ label: string; href: string; icon?: string }> = [
-  { label: '发现', href: '/' },
-  { label: '探索', href: '/explore', icon: 'compass' },
-  { label: '模板市场', href: '/templates', icon: 'template' },
-  { label: '我的作品', href: '/my-works' },
-  { label: '创作仪表盘', href: '/dashboard', icon: 'chart' },
-  { label: '社区广场', href: '/plaza' },
-  { label: '排行榜', href: '/ranking', icon: 'trophy' },
+const navLinks: Array<{ key: string; href: string; icon?: string }> = [
+  { key: 'discover', href: '/' },
+  { key: 'explore', href: '/explore', icon: 'compass' },
+  { key: 'templates', href: '/templates', icon: 'template' },
+  { key: 'myWorks', href: '/my-works' },
+  { key: 'dashboard', href: '/dashboard', icon: 'chart' },
+  { key: 'plaza', href: '/plaza' },
+  { key: 'ranking', href: '/ranking', icon: 'trophy' },
 ];
 
-const createLinks = [
-  { label: '开始创作', href: '/create' },
-  { label: '模板市场', href: '/templates' },
-  { label: '我的创作', href: '/my-works' },
+const createLinks: Array<{ key: string; href: string }> = [
+  { key: 'startCreate', href: '/create' },
+  { key: 'templateMarket', href: '/templates' },
+  { key: 'myCreations', href: '/my-works' },
 ];
 
-const accountLinks: Array<{ label: string; href: string; icon?: string }> = [
-  { label: '设置', href: '/profile' },
-  { label: '成就', href: '/achievements', icon: 'medal' },
-  { label: '邀请奖励', href: '/invite', icon: 'gift' },
-  { label: '关注动态', href: '/plaza?type=following' },
+const accountLinks: Array<{ key: string; href: string; icon?: string }> = [
+  { key: 'settings', href: '/profile' },
+  { key: 'achievements', href: '/achievements', icon: 'medal' },
+  { key: 'inviteReward', href: '/invite', icon: 'gift' },
+  { key: 'followingFeed', href: '/plaza?type=following' },
 ];
 
 export default function Sidebar() {
@@ -38,6 +40,10 @@ export default function Sidebar() {
   const { balance, sidebarCollapsed, toggleSidebar } = useAppStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showModelModal, setShowModelModal] = useState(false);
+
+  const tNav = useTranslations('nav');
+  const tAuth = useTranslations('auth');
+  const tCommon = useTranslations('common');
 
   const handleCreateClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) {
@@ -88,7 +94,7 @@ export default function Sidebar() {
             {/* Navigation */}
             <div>
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
-                导航
+                {tNav('title')}
               </p>
               {navLinks.map((link) => {
                 const isActive =
@@ -125,7 +131,7 @@ export default function Sidebar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                       </svg>
                     )}
-                    {link.label}
+                    {tNav(link.key)}
                   </Link>
                 );
               })}
@@ -134,7 +140,7 @@ export default function Sidebar() {
             {/* Creation */}
             <div>
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
-                创作
+                {tNav('create')}
               </p>
               {createLinks.map((link) => (
                 <Link
@@ -147,7 +153,7 @@ export default function Sidebar() {
                       : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
                   }`}
                 >
-                  {link.label}
+                  {tNav(link.key)}
                 </Link>
               ))}
             </div>
@@ -155,7 +161,7 @@ export default function Sidebar() {
             {/* Account */}
             <div>
               <p className="px-3 mb-2 text-xs font-semibold text-violet-400 uppercase tracking-wider">
-                账户
+                {tNav('account')}
               </p>
               {accountLinks.map((link) => {
                 const isActive =
@@ -182,7 +188,7 @@ export default function Sidebar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     )}
-                    {link.label}
+                    {tNav(link.key)}
                   </Link>
                 );
               })}
@@ -194,7 +200,7 @@ export default function Sidebar() {
                     : 'text-violet-300 hover:bg-violet-800/50 hover:text-white'
                 }`}
               >
-                自定义 API
+                {tNav('customApi')}
               </Link>
             </div>
 
@@ -208,7 +214,7 @@ export default function Sidebar() {
           {!sidebarCollapsed && (
             <div className="flex items-center justify-between mb-3 px-2">
               <div className="text-sm text-violet-300">
-                UU币：<span className="text-yellow-400 font-bold">{balance.permanent + balance.temp}</span>
+                {tNav('uuBalance')}：<span className="text-yellow-400 font-bold">{balance.permanent + balance.temp}</span>
               </div>
               <button className="p-1 rounded hover:bg-violet-800 text-violet-400 hover:text-white">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,8 +230,15 @@ export default function Sidebar() {
               onClick={() => setShowModelModal(true)}
               className="w-full py-2 mb-3 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium transition-colors"
             >
-              模型 / 兑换
+              {tNav('modelExchange')}
             </button>
+          )}
+
+          {/* Language Switcher */}
+          {!sidebarCollapsed && (
+            <div className="mb-3">
+              <LanguageSwitcher onDark />
+            </div>
           )}
 
           {/* User info */}
@@ -244,7 +257,7 @@ export default function Sidebar() {
                 <button
                   onClick={logout}
                   className="p-1 rounded hover:bg-violet-800 text-violet-400 hover:text-white"
-                  title="退出登录"
+                  title={tAuth('logout')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -258,7 +271,7 @@ export default function Sidebar() {
                 href="/login"
                 className="block w-full py-2 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium text-center transition-colors"
               >
-                登录 / 注册
+                {tAuth('loginRegister')}
               </Link>
             )
           )}
@@ -274,21 +287,21 @@ export default function Sidebar() {
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center">
           <div className="bg-[var(--bg2)] rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-bold text-[var(--ink)] mb-2">请先登录</h3>
-            <p className="text-[var(--muted)] mb-4">创作功能需要登录后才能使用。</p>
+            <h3 className="text-lg font-bold text-[var(--ink)] mb-2">{tCommon('loginRequired')}</h3>
+            <p className="text-[var(--muted)] mb-4">{tAuth('loginToContinue')}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowAuthModal(false)}
                 className="flex-1 py-2 rounded-lg border border-[var(--rule)] text-[var(--ink)] hover:bg-[var(--bg3)]"
               >
-                取消
+                {tCommon('cancel')}
               </button>
               <Link
                 href="/login"
                 onClick={() => setShowAuthModal(false)}
                 className="flex-1 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 text-center"
               >
-                去登录
+                {tAuth('goLogin')}
               </Link>
             </div>
           </div>

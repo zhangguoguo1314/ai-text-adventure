@@ -1,0 +1,96 @@
+# ============================================
+# 部署工作流
+#
+# 触发条件：推送 v* 格式的 Git 标签（如 v1.0.0）
+#
+# Jobs:
+#   build-and-push-docker — 构建并推送后端/前端 Docker 镜像到 GHCR
+# ============================================
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ============================================
+  # 构建 & 推送 Docker 镜像
+  # ============================================
+  build-and-push-docker:
+    name: 构建并推送 Docker 镜像
+    runs-on: ubuntu-latest
+
+    # GHCR 推送需要 packages:write 权限
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 提取版本号
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      # 仓库名转为小写（Docker 镜像名必须全小写）
+      - name: 转换仓库名为小写
+        id: repo
+        run: |
+          echo "NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: 登录 GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================
+      # 后端镜像
+      # ============================================
+      - name: 构建并推送后端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          dockerfile: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.NAME }}/backend:latest
+            ghcr.io/${{ steps.repo.outputs.NAME }}/backend:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ steps.repo.outputs.NAME }}/backend:${{ steps.version.outputs.SHORT_SHA }}
+
+      # ============================================
+      # 前端镜像
+      # ============================================
+      - name: 构建并推送前端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          dockerfile: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.NAME }}/frontend:latest
+            ghcr.io/${{ steps.repo.outputs.NAME }}/frontend:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ steps.repo.outputs.NAME }}/frontend:${{ steps.version.outputs.SHORT_SHA }}
+
+      # ============================================
+      # 输出镜像地址摘要
+      # ============================================
+      - name: 输出镜像摘要
+        run: |
+          echo "## Docker 镜像已推送" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 镜像 | 标签 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| backend | latest, ${{ steps.version.outputs.VERSION }}, ${{ steps.version.outputs.SHORT_SHA }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend | latest, ${{ steps.version.outputs.VERSION }}, ${{ steps.version.outputs.SHORT_SHA }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "拉取命令：" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ steps.repo.outputs.NAME }}/backend:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ steps.repo.outputs.NAME }}/frontend:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

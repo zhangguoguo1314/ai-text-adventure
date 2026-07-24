@@ -306,9 +306,7 @@ export default function SearchModal({ open, onClose, onSearch }: SearchModalProp
                       <button
                         key={kw}
                         onClick={() => handleSearch(kw)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors
-                          bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20
-                          text-violet-700 dark:text-violet-300 hover:from-violet-100 hover:to-purple-100 dark:hover:from-violet-900/30 dark:hover:to-purple-900/30"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 text-violet-700 dark:text-violet-300 hover:from-violet-100 hover:to-purple-100 dark:hover:from-violet-900/30 dark:hover:to-purple-900/30"
                       >
                         <span className="text-xs font-bold text-violet-500 dark:text-violet-400">
                           {index + 1}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Banner from '@/components/home/Banner';
 import SearchBar from '@/components/home/SearchBar';
 import RankTabs from '@/components/home/RankTabs';
@@ -81,6 +82,7 @@ const mockScripts: Script[] = [
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('category');
+  const t = useTranslations('home');
 
   return (
     <PageTransition>
@@ -95,7 +97,7 @@ export default function HomePage() {
 
         {/* 排行榜区域 */}
         <div className="mt-8">
-          <h2 className="text-xl font-bold text-[var(--ink)] mb-4">排行榜</h2>
+          <h2 className="text-xl font-bold text-[var(--ink)] mb-4">{t('ranking')}</h2>
           <RankTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
           {/* 作品列表 */}
